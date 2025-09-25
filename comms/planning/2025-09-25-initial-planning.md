@@ -1,39 +1,54 @@
 # Project: Fencing Club Registration Notifications
 
-## High-Level Goal
+## Milestone 1: Core Data Pipeline
+*As per Tech Advisor recommendation, the initial focus is on creating a reliable data ingestion and persistence mechanism.*
 
-Create a tool to track tournament registrations for members of a fencing club and send notifications about them.
+- **Source:** `fencingtracker.com` only.
+- **Goal:** Scrape data, persist it to a database, and correctly identify new vs. existing registrations.
+- **Out of Scope (for now):** `askfred.net` integration, email notifications, web UI.
 
 ## Architecture & Technology
 
-### High-Level Architecture
-1.  **Scraper Service:** A module with "connectors" for each data source (`fencingtracker.com`, `askfred.net`) to fetch registration data.
-2.  **Database:** A relational database to store clubs, fencers, tournaments, and registrations to track changes.
-3.  **Notification Service:** An email service to send alerts about new registrations.
-4.  **Scheduler:** A job scheduler to run the scraper service periodically.
-5.  **Web Application:** A simple web interface for viewing the collected data.
-
-### Technology Stack
 - **Backend Language:** Python
 - **Web Framework & API:** FastAPI
 - **Database:** SQLite with the SQLAlchemy ORM
 - **Web Scraping:** Requests & BeautifulSoup
 - **Job Scheduling:** APScheduler
-- **Frontend:** Basic HTML, CSS, and JavaScript
 
-## Initial Discovery
+## Data Model & Change Detection
 
-### Q1: Data Source
-- **A:** Public data from `fencingtracker.com` and `askfred.net`. No API is available, so web scraping will be necessary. No credentials will be used.
+### Core Schema
+- **`tournaments`**
+  - `id` (PK)
+  - `name` (TEXT, UNIQUE)
+  - `date` (TEXT)
+- **`fencers`**
+  - `id` (PK)
+  - `name` (TEXT, UNIQUE)
+- **`registrations`**
+  - `id` (PK)
+  - `fencer_id` (FK)
+  - `tournament_id` (FK)
+  - `events` (TEXT)
+  - `last_seen_at` (DATETIME)
+  - UNIQUE constraint on (`fencer_id`, `tournament_id`)
 
-### Q2: Users
-- **A:** Club managers and fencers. They want to see who is attending which tournaments.
+### Change Detection Workflow
+1.  The scheduler triggers the `scraper_service`.
+2.  The scraper fetches all current registrations from the website.
+3.  For each scraped registration:
+    a.  Use a `get_or_create` pattern for the fencer and tournament to get their IDs.
+    b.  Attempt to find an existing registration matching `(fencer_id, tournament_id)`.
+    c.  **If it exists:** Update the `last_seen_at` timestamp and check if the `events` string has changed. If events changed, this is a **MODIFIED** registration.
+    d.  **If it does not exist:** This is a **NEW** registration. Create the record in the `registrations` table and set the `last_seen_at` timestamp.
+4.  After processing all scraped items, any registration in our database that wasn't seen in the latest scrape (i.e., its `last_seen_at` is older than the current job's start time) can be considered **REMOVED** (e.g., the fencer withdrew).
 
-### Q3: Information Scope
-- **A:** Fencer's name, tournament name, tournament date, and specific event (e.g., Y12, Cadet, Junior).
+## Future Planning
 
-### Q4: Notification Trigger
-- **A:** A new registration detected for an upcoming tournament. This implies a database is needed to track known registrations.
+### Notification Service Plan
+- **Provider:** Start with Python's built-in `smtplib` and a local SMTP server (like `python -m smtpd -c DebuggingServer -n localhost:1025`) for development. For production, use a transactional email service like SendGrid or AWS SES.
+- **Configuration:** Store credentials and settings in environment variables (e.g., `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`).
+- **Behavior:** Implement retries on failure. Establish a "quiet hours" policy to avoid sending notifications at night.
 
-### Q5: Notification Method
-- **A:** Email seems to be the preferred method.
+### Scraper Constraints
+- The `robots.txt` for `fencingtracker.com` is permissive. However, we will implement a respectful scrape frequency (e.g., no more than once per hour) to be a good web citizen.
