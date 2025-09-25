@@ -13,7 +13,7 @@ def get_or_create_fencer(db: Session, name: str) -> models.Fencer:
     # Fencer not found, create a new one
     fencer = models.Fencer(name=name)
     db.add(fencer)
-    # The session will be committed by the service layer
+    db.flush()  # Flush to get the ID without committing
     return fencer
 
 
@@ -26,7 +26,7 @@ def get_or_create_tournament(db: Session, name: str, date: str) -> models.Tourna
     # Tournament not found, create a new one
     tournament = models.Tournament(name=name, date=date)
     db.add(tournament)
-    # The session will be committed by the service layer
+    db.flush()  # Flush to get the ID without committing
     return tournament
 
 

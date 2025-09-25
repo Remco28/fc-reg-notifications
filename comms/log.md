@@ -9,3 +9,9 @@
 [2025-09-25T21:45Z] [DEVELOPER]: IMPL IN_PROGRESS: Implementing core data pipeline for fencingtracker.com (Tournament/Fencer/Registration models, CRUD operations, and scraper service)
 [2025-09-25T22:00Z] [DEVELOPER]: IMPL DONE: Core data pipeline implemented and tested - Tournament/Fencer/Registration models with unique constraints, CRUD operations with get_or_create pattern, scraper service with change detection, database initialization. All acceptance criteria met.
 [2025-09-26 00:00:00] [ARCHITECT]: SPEC READY - 2025-09-26-notification-service.md
+
+[2025-09-26T10:00Z] [DEVELOPER]: IMPL IN_PROGRESS: Implementing email notification service (SMTP configuration, notification service, integration with scraper)
+
+[2025-09-26T10:30Z] [DEVELOPER]: IMPL DONE: Email notification service implemented and tested - SMTP configuration via .env, notification service with smtplib, integrated with scraper for new registration alerts, environment loading in main.py. Fixed CRUD flush issue for architect's commit pattern. All acceptance criteria met.
+
+[2025-09-26T11:00Z] [ARCHITECT]: REVIEW PASS - Notification service implementation meets specification; spec archived.

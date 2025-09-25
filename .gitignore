@@ -16,12 +16,17 @@ dist/
 .coverage.*
 .cache
 .pytest_cache/
+coverage.xml
 htmlcov/
+*.log
 
 # Databases
 *.db
+*.sqlite
 *.sqlite3
 *.sqlite3-journal
+*.sqlite-wal
+*.sqlite-shm
 
 # Environment variables
 .env
@@ -32,6 +37,17 @@ htmlcov/
 venv/
 env/
 fc-reg_env/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+
+# Python version managers
+.python-version
+
+# Packaging artifacts
+*.whl
+pip-wheel-metadata/
 
 # IDE / Editor specific
 .vscode/

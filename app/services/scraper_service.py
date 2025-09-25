@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 from ..crud import get_or_create_fencer, get_or_create_tournament, update_or_create_registration
+from .notification_service import send_notification
 from typing import Dict
 
 
@@ -61,6 +62,13 @@ def scrape_and_persist(db: Session, club_url: str) -> Dict[str, int]:
 
             if is_new:
                 new_count += 1
+                # Send notification for new registration
+                subject = f"New Fencing Registration: {fencer_name}"
+                body = f"{fencer_name} has registered for the {tournament_name} in {events}."
+                try:
+                    send_notification(subject, body)
+                except Exception as e:
+                    print(f"Failed to send notification for {fencer_name}: {e}")
             else:
                 updated_count += 1
 

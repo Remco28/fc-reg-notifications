@@ -1,9 +1,13 @@
 import typer
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 from .database import init_db, get_db
 from .services import scraper_service
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(
     title="Fencing Club Registration Notifications",
