@@ -8,7 +8,7 @@
 - [x] Set up basic application entrypoint (`main.py`) to run the scraper
 
 ## Future Enhancements (Backlog)
-- [ ] Add email notification system for new/updated registrations
+- [x] Add email notification system for new/updated registrations
 - [ ] Build a simple web UI to display registrations
 - [ ] Add scraper for `askfred.net`
 - [ ] Implement job scheduling with APScheduler
