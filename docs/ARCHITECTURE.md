@@ -7,7 +7,8 @@ Short overview of the fencing club registration notifications system as of 2025-
 ### Core Services
 - **FastAPI Application** (`app/main.py`) – Exposes the REST surface (currently `GET /health`) and hosts the Typer CLI entry point for operational commands.
 - **Scraper Service** (`app/services/scraper_service.py`) – Fetches club registration pages from fencingtracker.com, normalizes rows, and persists changes.
-- **Notification Service** (`app/services/notification_service.py`) – Sends SMTP emails when the scraper detects newly created registrations.
+- **Notification Service** (`app/services/notification_service.py`) – Sends transactional emails via Mailgun when the scraper detects newly created registrations.
+- **Mailgun Client** (`app/services/mailgun_client.py`) – Handles Mailgun API integration with retry logic and error handling.
 
 ### Supporting Services
 - **Database** – SQLite file (`fc_registration.db`) storing fencers, tournaments, and registrations.
@@ -21,7 +22,7 @@ Typer CLI / FastAPI       Scraper Service            Notification Service
         |                        |
         +---- HTTP (fencingtracker.com) ----> scrape            |
         |                        |                              |
-        +------------------------ SMTP -------------------------+
+        +------------------------ Mailgun API ------------------+
 ```
 Single process today: FastAPI app bootstraps the CLI and orchestrates scraper + notification logic.
 
@@ -29,7 +30,7 @@ Single process today: FastAPI app bootstraps the CLI and orchestrates scraper + 
 
 ### Scrape & Notify
 ```
-`typer scrape <club_url>` → Scraper Service → requests GET club page → parse table rows → CRUD layer upserts entities → commit → if new registration → Notification Service → SMTP email
+`typer scrape <club_url>` → Scraper Service → requests GET club page → parse table rows → CRUD layer upserts entities → commit → if new registration → Notification Service → Mailgun API → email delivery
 ```
 
 ### Health Check
@@ -50,20 +51,33 @@ Client → FastAPI `GET /health` → return `{ "status": "ok" }`
 ## Configuration
 
 - `.env` loaded at startup in `app/main.py` via `python-dotenv`.
-- Core variables: `SMTP_HOST`, `SMTP_PORT`, `SENDER_EMAIL`, `RECIPIENT_EMAIL`; default to localhost debugging server for development.
+- Core variables for Mailgun email delivery:
+  - `MAILGUN_API_KEY` - API key from Mailgun dashboard (required)
+  - `MAILGUN_DOMAIN` - Sending domain configured in Mailgun (required)
+  - `MAILGUN_SENDER` - From email address (required)
+  - `MAILGUN_DEFAULT_RECIPIENTS` - Comma-separated list of recipient emails (required)
 - Additional settings (e.g., alternate DB URL) would be introduced via env vars before adding code-level defaults.
+
+### Environment Variables Example
+```bash
+MAILGUN_API_KEY=key-1234567890abcdef1234567890abcdef
+MAILGUN_DOMAIN=mg.yourdomain.com
+MAILGUN_SENDER=notifications@yourdomain.com
+MAILGUN_DEFAULT_RECIPIENTS=admin@yourdomain.com,alerts@yourdomain.com
+```
 
 ## Integration Points
 
 - **Database**: SQLite accessed through SQLAlchemy ORM; session lifecycle managed in `database.get_db` and CLI commands.
 - **External HTTP**: `requests` calls to fencingtracker.com club pages; exceptions bubble to caller for logging/handling.
-- **SMTP**: Basic `smtplib.SMTP` connection; caller responsible for reliable delivery (currently best-effort with console logging).
+- **Mailgun API**: HTTP POST requests to Mailgun's messages endpoint with retry logic (up to 3 attempts, exponential backoff); includes proper error handling and logging.
 
 ## Runtime & Operations Notes
 
 - Start FastAPI app with Uvicorn (`uvicorn app.main:app`); CLI commands invoked via `python -m app.main ...`.
+- Test Mailgun configuration: `python -m app.main send-test-email` (optionally specify recipient).
 - Database concurrency: single-process access today; keep transactions brief and rely on SQLite WAL if multi-process emerges.
-- Logging: scraper prints row errors and notification failures to stdout; consider structured logging when scaling.
+- Logging: structured logging via Python logging module for scraper errors, notification failures, and Mailgun API interactions.
 - Health probe: `/health` endpoint for readiness/liveness checks.
 - Future scheduler can rely on APScheduler (already in requirements) to trigger `scrape` periodically.
 
@@ -71,7 +85,7 @@ Client → FastAPI `GET /health` → return `{ "status": "ok" }`
 
 ### For Developers
 - Follow existing service separation: keep HTTP handlers thin, put logic in services, and use CRUD helpers for persistence.
-- Add tests around scraper parsing and notification triggers as they evolve; mocks recommended for external HTTP/SMTP.
+- Add tests around scraper parsing and notification triggers as they evolve; mocks recommended for external HTTP/Mailgun API calls.
 - Extend configuration by adding documented env vars rather than hard-coded constants.
 
 ### For Architects/Tech Leads

@@ -15,3 +15,8 @@
 [2025-09-26T10:30Z] [DEVELOPER]: IMPL DONE: Email notification service implemented and tested - SMTP configuration via .env, notification service with smtplib, integrated with scraper for new registration alerts, environment loading in main.py. Fixed CRUD flush issue for architect's commit pattern. All acceptance criteria met.
 
 [2025-09-26T11:00Z] [ARCHITECT]: REVIEW PASS - Notification service implementation meets specification; spec archived.
+[2025-09-29T16:34Z] [ARCHITECT]: SPEC READY - 2025-09-29-mailgun-email-helper.md
+[2025-09-29T16:45Z] [DEVELOPER]: IMPL IN_PROGRESS: Implementing Mailgun email notification helper (client, service updates, CLI command, tests, docs)
+[2025-09-29T17:15Z] [DEVELOPER]: IMPL DONE: Mailgun email notification helper implemented - MailgunEmailClient with retry logic and configuration validation, notification service updated with new send_registration_notification function, scraper service integrated, send-test-email CLI command added, documentation updated, comprehensive unit tests added. All acceptance criteria met.
+[2025-09-29T17:30Z] [DEVELOPER]: BUGFIX: Fixed timeout enforcement in MailgunEmailClient - timeout parameter now properly passed to session.post() calls instead of setting session.timeout (which requests ignores). Added test coverage for timeout enforcement. Issue identified by architect at mailgun_client.py:96.
+[2025-09-29T18:37Z] [ARCHITECT]: REVIEW PASS - Mailgun helper spec implemented; task archived.

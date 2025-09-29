@@ -1,8 +1,10 @@
 import requests
+import logging
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 from ..crud import get_or_create_fencer, get_or_create_tournament, update_or_create_registration
-from .notification_service import send_notification
+from .notification_service import send_registration_notification
+from .mailgun_client import NotificationError
 from typing import Dict
 
 
@@ -63,12 +65,12 @@ def scrape_and_persist(db: Session, club_url: str) -> Dict[str, int]:
             if is_new:
                 new_count += 1
                 # Send notification for new registration
-                subject = f"New Fencing Registration: {fencer_name}"
-                body = f"{fencer_name} has registered for the {tournament_name} in {events}."
+                logger = logging.getLogger(__name__)
                 try:
-                    send_notification(subject, body)
-                except Exception as e:
-                    print(f"Failed to send notification for {fencer_name}: {e}")
+                    send_registration_notification(fencer_name, tournament_name, events, club_url)
+                    logger.info(f"Notification sent for new registration: {fencer_name}")
+                except NotificationError as e:
+                    logger.error(f"Failed to send notification for {fencer_name}: {e}")
             else:
                 updated_count += 1
 
@@ -76,7 +78,8 @@ def scrape_and_persist(db: Session, club_url: str) -> Dict[str, int]:
 
         except Exception as e:
             # Log the error but continue processing other rows
-            print(f"Error processing row: {e}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error processing row: {e}")
             continue
 
     db.commit()
