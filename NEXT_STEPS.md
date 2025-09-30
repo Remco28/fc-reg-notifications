@@ -19,7 +19,9 @@
 - [x] Generate API/SMTP credentials and store them securely in `.env`/secrets (not in git)
 - [x] Implement a small mail helper in the app with logging + retry handling, referencing `comms/email-notification-playbook.md`
 - [ ] Send a live test message and confirm delivery; note any follow-up tasks for bounce handling
-- [ ] Once a custom domain is ready, add SPF/DKIM/DMARC records and switch the provider to domain-based sending
+- [ ] Test that your domain-based sending works (send a test email via CLI)
+- [ ] Update your .env with the domain-based sender address if needed
+- [x] Once a custom domain is ready, add SPF/DKIM/DMARC records and switch the provider to domain-based sending
 
 ## Documentation
 - [ ] Write API documentation (initial version via FastAPI)

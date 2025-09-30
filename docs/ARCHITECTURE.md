@@ -6,7 +6,7 @@ Short overview of the fencing club registration notifications system as of 2025-
 
 ### Core Services
 - **FastAPI Application** (`app/main.py`) – Exposes the REST surface (currently `GET /health`) and hosts the Typer CLI entry point for operational commands.
-- **Scraper Service** (`app/services/scraper_service.py`) – Fetches club registration pages from fencingtracker.com, normalizes rows, and persists changes.
+- **Scraper Service** (`app/services/scraper_service.py`) – Fetches club registration pages from fencingtracker.com, normalizes rows, and persists changes; filters out non-tournament headings (e.g., club headers, "Tournaments") and skips duplicate sections to avoid double-loading registrations.
 - **Notification Service** (`app/services/notification_service.py`) – Sends transactional emails via Mailgun when the scraper detects newly created registrations.
 - **Mailgun Client** (`app/services/mailgun_client.py`) – Handles Mailgun API integration with retry logic and error handling.
 

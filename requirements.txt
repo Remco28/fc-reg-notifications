@@ -6,3 +6,4 @@ beautifulsoup4
 apscheduler
 typer
 python-dotenv
+jinja2

@@ -34,6 +34,11 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
     """
     Update an existing registration or create a new one.
 
+    Note: With the corrected scraper, a fencer can have multiple registrations
+    for the same tournament (one per event). The unique constraint on
+    (fencer_id, tournament_id) means we need to handle this by updating
+    the events field to include all events for that tournament.
+
     Returns:
         tuple[Registration, bool]: The registration object and a boolean indicating
         if it was newly created (True if new, False if it already existed).
@@ -45,8 +50,18 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
 
     if registration:
         # Update existing registration
-        registration.events = events
+        # If events field doesn't already contain this event, append it
+        existing_events = registration.events
+        if existing_events and events and events not in existing_events:
+            # Append the new event to existing events (comma-separated)
+            registration.events = f"{existing_events}, {events}"
+        elif not existing_events:
+            # No existing events, set it
+            registration.events = events
+        # Otherwise, event already in the list, just update timestamp
+
         registration.last_seen_at = datetime.utcnow()
+        db.flush()
         return registration, False
     else:
         # Create new registration
@@ -57,4 +72,27 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
             last_seen_at=datetime.utcnow()
         )
         db.add(registration)
+        try:
+            db.flush()
+        except IntegrityError:
+            # Race condition: registration was created between our query and insert
+            # Rollback and retry the query
+            db.rollback()
+            registration = db.query(models.Registration).filter(
+                models.Registration.fencer_id == fencer.id,
+                models.Registration.tournament_id == tournament.id
+            ).first()
+            if registration:
+                # Update the existing registration instead
+                existing_events = registration.events
+                if existing_events and events and events not in existing_events:
+                    registration.events = f"{existing_events}, {events}"
+                elif not existing_events:
+                    registration.events = events
+                registration.last_seen_at = datetime.utcnow()
+                db.flush()
+                return registration, False
+            else:
+                # Still doesn't exist? Re-raise the error
+                raise
         return registration, True
