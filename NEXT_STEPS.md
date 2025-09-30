@@ -14,13 +14,15 @@
 - [ ] Implement job scheduling with APScheduler
 
 ## Action Items: Email Notifications
-- [ ] Pick a transactional provider that supports single-sender mode (e.g., SendGrid, Mailgun Flex, Postmark)
-- [ ] Create an account and verify the personal sender address you will use for notifications
-- [ ] Generate API/SMTP credentials and store them securely in `.env`/secrets (not in git)
-- [ ] Implement a small mail helper in the app with logging + retry handling, referencing `comms/email-notification-playbook.md`
+- [x] Pick a transactional provider that supports single-sender mode (e.g., SendGrid, Mailgun Flex, Postmark)
+- [x] Create an account and verify the personal sender address you will use for notifications
+- [x] Generate API/SMTP credentials and store them securely in `.env`/secrets (not in git)
+- [x] Implement a small mail helper in the app with logging + retry handling, referencing `comms/email-notification-playbook.md`
 - [ ] Send a live test message and confirm delivery; note any follow-up tasks for bounce handling
-- [ ] Once a custom domain is ready, add SPF/DKIM/DMARC records and switch the provider to domain-based sending
+- [ ] Test that your domain-based sending works (send a test email via CLI)
+- [ ] Update your .env with the domain-based sender address if needed
+- [x] Once a custom domain is ready, add SPF/DKIM/DMARC records and switch the provider to domain-based sending
 
 ## Documentation
 - [ ] Write API documentation (initial version via FastAPI)
-- [ ] Add setup and usage instructions to a `README.md`
+- [x] Add setup and usage instructions to a `README.md`
