@@ -9,9 +9,9 @@
 
 ## Future Enhancements (Backlog)
 - [x] Add email notification system for new/updated registrations
-- [ ] Build a simple web UI to display registrations
+- [x] Build a simple web UI to display registrations
 - [ ] Add scraper for `askfred.net`
-- [ ] Implement job scheduling with APScheduler
+- [x] Implement job scheduling with APScheduler
 
 ## Action Items: Email Notifications
 - [x] Pick a transactional provider that supports single-sender mode (e.g., SendGrid, Mailgun Flex, Postmark)

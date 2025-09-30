@@ -17,13 +17,11 @@ A system to monitor fencing tournament registrations on fencingtracker.com and s
    ```
 
 2. Configure environment variables:
-   Create a `.env` file in the project root with your Mailgun credentials:
+   Copy the sample file and edit it with your credentials:
    ```bash
-   MAILGUN_API_KEY=key-1234567890abcdef1234567890abcdef
-   MAILGUN_DOMAIN=mg.yourdomain.com
-   MAILGUN_SENDER=notifications@yourdomain.com
-   MAILGUN_DEFAULT_RECIPIENTS=admin@yourdomain.com,alerts@yourdomain.com
+   cp .env.example .env
    ```
+   Update `.env` with your Mailgun API key, sender details, and the club URLs you want to monitor.
 
 3. Initialize the database:
    ```bash
@@ -73,6 +71,18 @@ uvicorn app.main:app --reload
 
 Access health check at: `http://localhost:8000/health`
 
+#### Run the scheduled scraper
+
+Use APScheduler to scrape one or more clubs on an interval:
+
+```bash
+python -m app.main schedule \
+  --club-url https://fencingtracker.com/club/100261977/Elite%20FC/registrations \
+  --interval 30
+```
+
+If `SCRAPER_CLUB_URLS` and `SCRAPER_INTERVAL_MINUTES` are set in `.env` you can omit the command-line options. Pass `--no-run-now` to skip the immediate startup scrape.
+
 ## Configuration
 
 All configuration is handled via environment variables. See `docs/ARCHITECTURE.md` for complete details.
@@ -85,6 +95,8 @@ All configuration is handled via environment variables. See `docs/ARCHITECTURE.m
 | `MAILGUN_DOMAIN` | Sending domain configured in Mailgun | `mg.yourdomain.com` |
 | `MAILGUN_SENDER` | From email address | `notifications@yourdomain.com` |
 | `MAILGUN_DEFAULT_RECIPIENTS` | Comma-separated recipient emails | `admin@example.com,alerts@example.com` |
+| `SCRAPER_CLUB_URLS` | Comma-separated club registration URLs for scheduled scraping | `https://fencingtracker.com/club/100261977/Elite%20FC/registrations` |
+| `SCRAPER_INTERVAL_MINUTES` | Minutes between scheduled scrapes | `30` |
 
 ## Development
 
