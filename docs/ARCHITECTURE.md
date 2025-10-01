@@ -96,13 +96,39 @@ MAILGUN_DEFAULT_RECIPIENTS=admin@yourdomain.com,alerts@yourdomain.com
 - Document non-trivial data flows (e.g., bulk imports, retries) and their failure handling so developers can implement consistently.
 - Capture new infrastructure choices (queues, caches, alt databases) and how they interact with existing services.
 
+## Future Enhancements (In Planning)
+
+### Multi-User Platform (Phases 1-4)
+The system is planned to evolve from a single-tenant notification system to a multi-user platform. See `comms/planning/2025-10-01-multi-user-enhancement.md` for full details.
+
+**Planned capabilities:**
+- User accounts with authentication (username/password)
+- Per-user club and fencer tracking
+- Daily digest emails (9:00 AM) with personalized content
+- Weapon filtering per club/fencer
+- Admin panel for user management
+- Automatic data cleanup (purge tournaments older than 30 days)
+- Admin notifications on new user signups
+
+**Data model additions:**
+- `users` - user accounts and authentication
+- `user_sessions` - session management
+- `tracked_clubs` - per-user club tracking preferences
+- `tracked_fencers` - per-user fencer tracking preferences
+
+**Architecture impact:**
+- Current global scraping continues, but notifications become per-user
+- Scheduler adds daily digest generation job (9:00 AM)
+- Scheduler adds nightly cleanup job (midnight)
+- Web UI expands from read-only to full CRUD for user preferences
+
 ## Related Docs
 
-- Roadmap: `docs/ROADMAP.md`
+- Planning: `comms/planning/2025-10-01-multi-user-enhancement.md`
 - Task specs: `comms/tasks/YYYY-MM-DD-*.md`
 - Ops/Deployment: *(not yet authored)*
 - ADRs: *(none yet)*
 
 ---
 
-Keep this overview aligned with the system’s shape; prune sections if they become stale.
+Keep this overview aligned with the system's shape; prune sections if they become stale.
