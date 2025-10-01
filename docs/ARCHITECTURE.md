@@ -8,6 +8,8 @@ Short overview of the fencing club registration notifications system as of 2025-
 - **FastAPI Application** (`app/main.py`) – Exposes the REST surface (currently `GET /health`) and hosts the Typer CLI entry point for operational commands.
 - **Scraper Service** (`app/services/scraper_service.py`) – Fetches club registration pages from fencingtracker.com, normalizes rows, and persists changes; filters out non-tournament headings (e.g., club headers, "Tournaments") and skips duplicate sections to avoid double-loading registrations.
 - **Scheduler CLI** (`app/main.py schedule`) – Uses APScheduler to trigger `scrape_and_persist` for one or more clubs on a fixed interval; reads `SCRAPER_CLUB_URLS` and `SCRAPER_INTERVAL_MINUTES` from the environment with CLI overrides.
+- **Auth Service** (`app/services/auth_service.py`) – Handles user registration, password hashing (bcrypt), session lifecycle management, and admin notifications on new signups.
+- **Digest Service** (`app/services/digest_service.py`) – Builds per-user daily digest emails based on tracked clubs and sends them via Mailgun; exposes scheduler helpers and a manual CLI trigger.
 - **Notification Service** (`app/services/notification_service.py`) – Sends transactional emails via Mailgun when the scraper detects newly created registrations.
 - **Mailgun Client** (`app/services/mailgun_client.py`) – Handles Mailgun API integration with retry logic and error handling.
 
@@ -17,23 +19,34 @@ Short overview of the fencing club registration notifications system as of 2025-
 
 ### Process Architecture
 ```
-Typer CLI / FastAPI       Scraper Service            Notification Service
-        |                        |                              |
-        +---- SQLAlchemy Session + Models ----------------------+
-        |                        |
-        +---- HTTP (fencingtracker.com) ----> scrape            |
-        |                        |                              |
-        +------------------------ Mailgun API ------------------+
+Typer CLI / FastAPI
         |
-        +---- APScheduler jobs trigger scrape_and_persist -------+
+        +---- SQLAlchemy (users, sessions, tracked_clubs, registrations)
+        |
+        +---- Auth Service -----+--> Session cookies (FastAPI)
+        |                       |
+        |                       +--> Admin notification emails
+        |
+        +---- Scraper Service --+--> Registration rows
+        |                       |
+        |                       +--> Notification Service --> Mailgun
+        |
+        +---- Digest Service ------> Daily digests (Mailgun)
+        |
+        +---- APScheduler jobs (scrape scheduler, digest scheduler)
 ```
-Single process today: FastAPI app bootstraps the CLI and orchestrates scraper + notification logic.
+Single process today: FastAPI app bootstraps the CLI and orchestrates scraper, authentication, and notification logic.
 
 ## Data Flow Examples
 
 ### Scrape & Notify
 ```
 `typer scrape <club_url>` → Scraper Service → requests GET club page → parse table rows → CRUD layer upserts entities → commit → if new registration → Notification Service → Mailgun API → email delivery
+```
+
+### Daily Digest
+```
+`typer digest-scheduler` (or manual CLI run) → Digest Service → load active users → gather registrations created in the last 24 hours per tracked club → apply weapon filters → format digest email → Notification Service → Mailgun API → per-user delivery
 ```
 
 ### Health Check
@@ -44,12 +57,15 @@ Client → FastAPI `GET /health` → return `{ "status": "ok" }`
 ## Key Abstractions
 
 - **Entities/Aggregates**: `Fencer`, `Tournament`, `Registration` (`app/models.py`) with unique constraints preventing duplicate registrations per tournament.
+- **User Management**: `User`, `UserSession`, and `TrackedClub` models capture authentication, session persistence, and per-user club preferences.
 - **Boundaries**: CLI commands (`typer`), HTTP API (FastAPI), services layer (`scraper_service`, `notification_service`), persistence (`crud`, `database`).
 - **Events**: Implicit “new registration detected” handled synchronously inside the scraper; no event bus yet.
 
 ## Authentication & Authorization
 
-- Not implemented. Health endpoint is non-sensitive; CLI expected to run in trusted environments.
+- Username/password login backed by bcrypt hashes stored in `users.password_hash`.
+- Sessions persisted in `user_sessions` with 30-day expiry and delivered via HTTP-only cookies.
+- Admin-only routes enforce `is_admin` via FastAPI dependencies; bootstrap via the `create-admin` CLI command.
 
 ## Configuration
 
@@ -59,6 +75,9 @@ Client → FastAPI `GET /health` → return `{ "status": "ok" }`
   - `MAILGUN_DOMAIN` - Sending domain configured in Mailgun (required)
   - `MAILGUN_SENDER` - From email address (required)
   - `MAILGUN_DEFAULT_RECIPIENTS` - Comma-separated list of recipient emails (required)
+- Authentication settings:
+  - `ADMIN_EMAIL` - Optional explicit recipient for new user alerts (defaults to first Mailgun recipient).
+  - `SESSION_COOKIE_SECURE` - Set to `true` in production to force secure cookies.
 - Additional settings (e.g., alternate DB URL) would be introduced via env vars before adding code-level defaults.
 
 ### Environment Variables Example
@@ -78,6 +97,10 @@ MAILGUN_DEFAULT_RECIPIENTS=admin@yourdomain.com,alerts@yourdomain.com
 ## Runtime & Operations Notes
 
 - Start FastAPI app with Uvicorn (`uvicorn app.main:app`); CLI commands invoked via `python -m app.main ...`.
+- CLI helpers:
+  - `python -m app.main create-admin <username> <email>` – bootstrap first admin user.
+  - `python -m app.main digest-scheduler` – run the daily digest scheduler (cron 9:00 AM system time).
+  - `python -m app.main send-user-digest <user_id>` – trigger a digest for a specific user during testing.
 - Test Mailgun configuration: `python -m app.main send-test-email` (optionally specify recipient).
 - Database concurrency: single-process access today; keep transactions brief and rely on SQLite WAL if multi-process emerges.
 - Logging: structured logging via Python logging module for scraper errors, notification failures, and Mailgun API interactions.

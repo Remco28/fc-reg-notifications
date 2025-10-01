@@ -27,6 +27,104 @@
         th:hover {
             background-color: var(--table-row-stripped-background-color);
         }
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 999px;
+            background: var(--code-background-color);
+            margin-right: 0.25rem;
+            font-size: 0.85em;
+        }
+        .tag.success {
+            background: #1a936f33;
+            color: #1a936f;
+        }
+        .tag.warning {
+            background: #f0aa0c33;
+            color: #8f5b00;
+        }
+        .error {
+            background: #ffe8e8;
+            border-left: 4px solid #c0392b;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .info {
+            background: #e8f4ff;
+            border-left: 4px solid #2980b9;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .club-list {
+            display: grid;
+            gap: 1rem;
+        }
+        .club-item {
+            border: 1px solid var(--card-border-color, #d0d7de);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .club-item header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+        }
+        .club-item details {
+            margin-top: 1rem;
+        }
+        .club-item .actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .outline {
+            background: transparent;
+            border: 1px solid currentColor;
+        }
+        .small {
+            font-size: 0.85em;
+            padding: 0.25rem 0.5rem;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        .stats article {
+            text-align: center;
+        }
+        .inactive-clubs {
+            list-style: none;
+            padding: 0;
+        }
+        .inactive-clubs li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--muted-border-color, #e1e4e8);
+        }
+        nav ul {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        nav form {
+            margin: 0;
+        }
+        nav button {
+            margin: 0;
+        }
+        .checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-right: 1rem;
+        }
+        details summary {
+            cursor: pointer;
+        }
     </style>
     {% block extra_styles %}{% endblock %}
 </head>
@@ -35,6 +133,23 @@
         <nav>
             <ul>
                 <li><strong>Fencing Club Registration Notifications</strong></li>
+            </ul>
+            <ul>
+                {% if user %}
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/clubs">Tracked Clubs</a></li>
+                {% if user.is_admin %}
+                <li><a href="/admin/users">Admin</a></li>
+                {% endif %}
+                <li>
+                    <form method="post" action="/auth/logout">
+                        <button type="submit" class="small outline">Log out</button>
+                    </form>
+                </li>
+                {% else %}
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+                {% endif %}
             </ul>
         </nav>
     </header>

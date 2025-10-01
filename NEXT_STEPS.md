@@ -1,28 +1,24 @@
 # Next Steps for Fencing Club Registration Notifications
 
-## Milestone 1: Core Data Pipeline
-- [x] Implement database models (`Tournament`, `Fencer`, `Registration`)
-- [x] Implement CRUD functions for data persistence
-- [x] Implement scraper for `fencingtracker.com`
-- [x] Integrate scraper with CRUD functions to persist data and detect changes
-- [x] Set up basic application entrypoint (`main.py`) to run the scraper
+## Phase 1: User Accounts & Tracked Clubs (Complete)
+- [x] Ship username/password authentication with bcrypt hashing and persisted sessions.
+- [x] Provide user-facing dashboard, tracked club management UI, and weapon filters.
+- [x] Deliver daily digest generation plus CLI helpers (`digest-scheduler`, `send-user-digest`).
+- [x] Add admin panel for user oversight and CLI bootstrap command (`create-admin`).
 
-## Future Enhancements (Backlog)
-- [x] Add email notification system for new/updated registrations
-- [x] Build a simple web UI to display registrations
-- [ ] Add scraper for `askfred.net`
-- [x] Implement job scheduling with APScheduler
+## Phase 2: Fencer Tracking (In Planning)
+- [ ] Finalize functional spec for tracked fencers and search UX.
+- [ ] Extend schema with `tracked_fencers` and fencer identifiers from fencingtracker profiles.
+- [ ] Update scraper/digest logic to populate the "Tracked Fencers" digest section.
+- [ ] Add UI workflows for adding, editing, and deactivating tracked fencers.
+- [ ] Expand tests to cover fencer lookups and digest de-duplication across club/fencer sections.
 
-## Action Items: Email Notifications
-- [x] Pick a transactional provider that supports single-sender mode (e.g., SendGrid, Mailgun Flex, Postmark)
-- [x] Create an account and verify the personal sender address you will use for notifications
-- [x] Generate API/SMTP credentials and store them securely in `.env`/secrets (not in git)
-- [x] Implement a small mail helper in the app with logging + retry handling, referencing `comms/email-notification-playbook.md`
-- [ ] Send a live test message and confirm delivery; note any follow-up tasks for bounce handling
-- [ ] Test that your domain-based sending works (send a test email via CLI)
-- [ ] Update your .env with the domain-based sender address if needed
-- [x] Once a custom domain is ready, add SPF/DKIM/DMARC records and switch the provider to domain-based sending
+## Operational Follow-Ups
+- [ ] Configure domain-based Mailgun sending (SPF/DKIM/DMARC) and verify delivery from the new templates.
+- [ ] Capture bounce/complaint handling approach (manual for now) and document the playbook.
+- [ ] Add environment documentation for `ADMIN_EMAIL`, digest scheduler process management, and secure cookie settings in deployment notes.
+- [ ] Schedule live end-to-end test of digest flow once production Mailgun sender is active.
 
-## Documentation
-- [ ] Write API documentation (initial version via FastAPI)
-- [x] Add setup and usage instructions to a `README.md`
+## Documentation & Tooling
+- [ ] Publish initial API/UI usage doc (FastAPI docs or internal runbook) summarizing auth, club management, and admin endpoints.
+- [ ] Introduce automated schema migrations (Alembic) before Phase 2 to manage future model changes.
