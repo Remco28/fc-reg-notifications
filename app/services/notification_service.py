@@ -20,7 +20,9 @@ def send_registration_notification(
     tournament_name: str,
     events: str,
     source_url: str,
-    recipients: Optional[List[str]] = None
+    recipients: Optional[List[str]] = None,
+    subject: Optional[str] = None,
+    body: Optional[str] = None,
 ) -> str:
     """
     Send email notification for a new fencing registration.
@@ -40,13 +42,18 @@ def send_registration_notification(
     """
     client = get_client()
 
-    subject = f"New fencing registration: {fencer_name}"
-    body = f"""Fencer: {fencer_name}
-Tournament: {tournament_name}
-Events: {events}
-Source: {source_url}"""
+    if subject is not None and body is not None:
+        return client.send_text(subject, body, to=recipients)
 
-    return client.send_text(subject, body, to=recipients)
+    default_subject = f"New fencing registration: {fencer_name}"
+    message_body = (
+        f"Fencer: {fencer_name}\n"
+        f"Tournament: {tournament_name}\n"
+        f"Events: {events}\n"
+        f"Source: {source_url}"
+    )
+
+    return client.send_text(default_subject, message_body, to=recipients)
 
 
 # Legacy function for backward compatibility

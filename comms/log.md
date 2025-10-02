@@ -34,3 +34,39 @@
 [2025-09-30T16:45Z] [ARCHITECT]: REVIEW PASS - Tournament grouping fix meets all 15 acceptance criteria; verified 94 registrations across 18 tournaments with correct field mappings (Tournament.name from h3 headings, Registration.events from table columns). Smart enhancement: multiple events per fencer comma-separated. Task archived.
 [2025-10-01T12:15Z] [DEVELOPER]: BUGFIX: Updated scraper heading heuristics to skip club metadata headings like "(Elite FC)" and "Tournaments", avoid duplicate processing, and added unit coverage for the new filters. Verified via pytest and live scrape against Elite FC URL (16 tournaments, 86 registrations, no duplicates). Documentation refreshed to capture the scraper behavior.
 [2025-10-01T13:00Z] [DEVELOPER]: FEATURE: Added Typer `schedule` command using APScheduler with `.env` driven club list, helper utilities for interval parsing, unit coverage, `.env.example`, and README/docs updates covering scheduler usage and environment setup.
+[2025-10-01T14:00Z] [TECHADVISOR]: PLANNING SESSION - Multi-user enhancement strategy finalized with product owner
+- Context: Mailgun DNS verified and operational; ready to expand from single-tenant to multi-user platform
+- Decision: 4-phase approach starting with user accounts + per-user club tracking
+- Verified: Fencer profile scraping feasible (stable IDs at fencingtracker.com/p/{fencer_id}/{name-slug})
+- Planning doc: comms/planning/2025-10-01-multi-user-enhancement.md
+- Key features: Username/password auth with bcrypt, daily digest at 9AM, weapon filtering per club, admin panel, 30-day data retention
+- Scope: Private beta only; no public registration initially
+[2025-10-01T14:30Z] [ARCHITECT]: SPEC READY - 2025-10-01-phase1-user-accounts-club-tracking.md
+- Comprehensive specification for Phase 1 multi-user platform
+- Deliverables: User authentication (bcrypt + sessions), per-user club tracking UI, daily digest scheduler, admin panel, CLI commands (create-admin, digest-scheduler, send-user-digest)
+- Schema: 3 new tables (users, user_sessions, tracked_clubs)
+- Security: 30-day sessions, HTTP-only cookies, weapon filtering, admin authorization
+- Testing requirements: 43 acceptance tests across auth, CRUD, digest generation
+[2025-10-01T15:00Z] [DEVELOPER]: IMPL IN_PROGRESS - Phase 1 multi-user platform (user accounts, authentication, club tracking, daily digest, admin panel)
+[2025-10-01T17:30Z] [DEVELOPER]: IMPL DONE - Phase 1 multi-user platform complete
+- Database: Added User, UserSession, TrackedClub models with proper foreign keys and cascades
+- Authentication: Full bcrypt password hashing (PBKDF2 fallback), 30-day sessions, login/logout/registration flows
+- API: 15 new endpoints across auth.py, clubs.py, admin.py with form + JSON support
+- Web UI: 6 templates (register, login, dashboard, tracked_clubs, admin/users) with Pico CSS
+- Digest Service: Daily scheduler (9AM), weapon filtering, per-user email generation, 24h lookback
+- CLI: create-admin (secure password prompt), digest-scheduler, send-user-digest commands
+- CRUD: 15 new functions for users, sessions, tracked clubs, registration queries
+- Features: Club URL validation, weapon filter normalization (foil/epee/saber), admin user stats, soft-delete clubs
+- Tests: 43 passing (auth service, CRUD, digest generation, weapon filtering, integration tests)
+- Docs: Updated ARCHITECTURE.md, NEXT_STEPS.md, README.md with Phase 1 details
+- Security: HTTP-only cookies, SameSite=lax, admin self-protection, configurable secure flag
+[2025-10-01T17:45Z] [TECHADVISOR]: REVIEW PASS - Phase 1 implementation approved for production
+- Test results: 43/43 passing (auth, CRUD, digest, notifications, scraper)
+- Code quality: Excellent separation of concerns, comprehensive error handling, security best practices
+- All success criteria met: User registration/login, club tracking with weapon filters, daily digest at 9AM, admin panel, CLI commands
+- Minor issues: 27 deprecation warnings (datetime.utcnow - Python 3.12, non-blocking), no CSRF tokens (acceptable for private beta)
+- Security grade: B+ (appropriate for private beta)
+- Production checklist: HTTPS required, SESSION_COOKIE_SECURE=true, 3 concurrent processes (web, scraper scheduler, digest scheduler)
+- Review report: comms/tasks/2025-10-01-phase1-code-review.md
+- Status: APPROVED for production deployment
+- README updated with deployment checklist and production environment variables

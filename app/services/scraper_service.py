@@ -271,7 +271,13 @@ def scrape_and_persist(db: Session, club_url: str) -> Dict[str, int]:
                 tournament = get_or_create_tournament(db, tournament_name, event_date)
 
                 # Store event_name in the events field where it belongs
-                registration, is_new = update_or_create_registration(db, fencer, tournament, event_name)
+                registration, is_new = update_or_create_registration(
+                    db,
+                    fencer,
+                    tournament,
+                    event_name,
+                    normalized_url,
+                )
 
                 if is_new:
                     new_count += 1

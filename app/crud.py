@@ -1,6 +1,10 @@
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 from datetime import datetime
+from typing import List, Optional
+
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, joinedload
+
 from . import models
 
 
@@ -30,7 +34,13 @@ def get_or_create_tournament(db: Session, name: str, date: str) -> models.Tourna
     return tournament
 
 
-def update_or_create_registration(db: Session, fencer: models.Fencer, tournament: models.Tournament, events: str) -> tuple[models.Registration, bool]:
+def update_or_create_registration(
+    db: Session,
+    fencer: models.Fencer,
+    tournament: models.Tournament,
+    events: str,
+    club_url: str,
+) -> tuple[models.Registration, bool]:
     """
     Update an existing registration or create a new one.
 
@@ -45,7 +55,7 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
     """
     registration = db.query(models.Registration).filter(
         models.Registration.fencer_id == fencer.id,
-        models.Registration.tournament_id == tournament.id
+        models.Registration.tournament_id == tournament.id,
     ).first()
 
     if registration:
@@ -60,6 +70,7 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
             registration.events = events
         # Otherwise, event already in the list, just update timestamp
 
+        registration.club_url = club_url
         registration.last_seen_at = datetime.utcnow()
         db.flush()
         return registration, False
@@ -69,6 +80,7 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
             fencer_id=fencer.id,
             tournament_id=tournament.id,
             events=events,
+            club_url=club_url,
             last_seen_at=datetime.utcnow()
         )
         db.add(registration)
@@ -80,7 +92,7 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
             db.rollback()
             registration = db.query(models.Registration).filter(
                 models.Registration.fencer_id == fencer.id,
-                models.Registration.tournament_id == tournament.id
+                models.Registration.tournament_id == tournament.id,
             ).first()
             if registration:
                 # Update the existing registration instead
@@ -89,6 +101,7 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
                     registration.events = f"{existing_events}, {events}"
                 elif not existing_events:
                     registration.events = events
+                registration.club_url = club_url
                 registration.last_seen_at = datetime.utcnow()
                 db.flush()
                 return registration, False
@@ -96,3 +109,237 @@ def update_or_create_registration(db: Session, fencer: models.Fencer, tournament
                 # Still doesn't exist? Re-raise the error
                 raise
         return registration, True
+
+
+# User CRUD operations
+
+
+def create_user(
+    db: Session,
+    username: str,
+    email: str,
+    password_hash: str,
+    is_admin: bool = False,
+) -> models.User:
+    user = models.User(
+        username=username,
+        email=email,
+        password_hash=password_hash,
+        is_admin=is_admin,
+    )
+    db.add(user)
+    db.flush()
+    return user
+
+
+def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
+    return (
+        db.query(models.User)
+        .filter(models.User.username == username)
+        .one_or_none()
+    )
+
+
+def get_user_by_id(db: Session, user_id: int) -> Optional[models.User]:
+    return db.query(models.User).filter(models.User.id == user_id).one_or_none()
+
+
+def get_active_users(db: Session) -> List[models.User]:
+    return (
+        db.query(models.User)
+        .filter(models.User.is_active.is_(True))
+        .all()
+    )
+
+
+def update_user(db: Session, user_id: int, **kwargs) -> models.User:
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("User not found")
+
+    for field, value in kwargs.items():
+        if hasattr(user, field) and value is not None:
+            setattr(user, field, value)
+
+    db.flush()
+    return user
+
+
+# Session management
+
+
+def create_session(
+    db: Session,
+    user_id: int,
+    session_token: str,
+    expires_at: datetime,
+) -> models.UserSession:
+    session = models.UserSession(
+        user_id=user_id,
+        session_token=session_token,
+        expires_at=expires_at,
+    )
+    db.add(session)
+    db.flush()
+    return session
+
+
+def get_session(db: Session, session_token: str) -> Optional[models.UserSession]:
+    return (
+        db.query(models.UserSession)
+        .filter(models.UserSession.session_token == session_token)
+        .one_or_none()
+    )
+
+
+def delete_session(db: Session, session_token: str) -> None:
+    session = (
+        db.query(models.UserSession)
+        .filter(models.UserSession.session_token == session_token)
+        .one_or_none()
+    )
+    if session:
+        db.delete(session)
+        db.flush()
+
+
+def cleanup_expired_sessions(db: Session) -> int:
+    deleted = (
+        db.query(models.UserSession)
+        .filter(models.UserSession.expires_at < datetime.utcnow())
+        .delete(synchronize_session=False)
+    )
+    if deleted:
+        db.flush()
+    return deleted
+
+
+# Tracked club operations
+
+
+def create_tracked_club(
+    db: Session,
+    user_id: int,
+    club_url: str,
+    club_name: Optional[str] = None,
+    weapon_filter: Optional[str] = None,
+) -> models.TrackedClub:
+    tracked = models.TrackedClub(
+        user_id=user_id,
+        club_url=club_url,
+        club_name=club_name,
+        weapon_filter=weapon_filter,
+    )
+    db.add(tracked)
+    db.flush()
+    return tracked
+
+
+def get_tracked_club_by_id(
+    db: Session,
+    tracked_club_id: int,
+) -> Optional[models.TrackedClub]:
+    return (
+        db.query(models.TrackedClub)
+        .filter(models.TrackedClub.id == tracked_club_id)
+        .one_or_none()
+    )
+
+
+def get_tracked_club_for_user(
+    db: Session,
+    tracked_club_id: int,
+    user_id: int,
+) -> Optional[models.TrackedClub]:
+    return (
+        db.query(models.TrackedClub)
+        .filter(
+            models.TrackedClub.id == tracked_club_id,
+            models.TrackedClub.user_id == user_id,
+        )
+        .one_or_none()
+    )
+
+
+def get_tracked_club_by_user_and_url(
+    db: Session,
+    user_id: int,
+    club_url: str,
+) -> Optional[models.TrackedClub]:
+    return (
+        db.query(models.TrackedClub)
+        .filter(
+            models.TrackedClub.user_id == user_id,
+            models.TrackedClub.club_url == club_url,
+        )
+        .one_or_none()
+    )
+
+
+def get_tracked_clubs(
+    db: Session,
+    user_id: int,
+    active: Optional[bool] = None,
+) -> List[models.TrackedClub]:
+    query = db.query(models.TrackedClub).filter(models.TrackedClub.user_id == user_id)
+    if active is not None:
+        query = query.filter(models.TrackedClub.active.is_(active))
+    return query.order_by(models.TrackedClub.created_at.desc()).all()
+
+
+def update_tracked_club(
+    db: Session,
+    tracked_club_id: int,
+    **kwargs,
+) -> models.TrackedClub:
+    tracked = get_tracked_club_by_id(db, tracked_club_id)
+    if not tracked:
+        raise ValueError("Tracked club not found")
+
+    for field, value in kwargs.items():
+        if hasattr(tracked, field) and value is not None:
+            setattr(tracked, field, value)
+
+    db.flush()
+    return tracked
+
+
+def deactivate_tracked_club(db: Session, tracked_club_id: int) -> None:
+    tracked = get_tracked_club_by_id(db, tracked_club_id)
+    if tracked and tracked.active:
+        tracked.active = False
+        db.flush()
+
+
+# Registration queries for digests
+
+
+def get_registrations_by_club_url(
+    db: Session,
+    club_url: str,
+    since: Optional[datetime] = None,
+) -> List[models.Registration]:
+    query = (
+        db.query(models.Registration)
+        .options(
+            joinedload(models.Registration.fencer),
+            joinedload(models.Registration.tournament),
+        )
+        .filter(models.Registration.club_url == club_url)
+    )
+    if since is not None:
+        query = query.filter(models.Registration.created_at >= since)
+    return query.all()
+
+
+def get_registration_counts_for_users(db: Session) -> List[dict]:
+    rows = (
+        db.query(
+            models.User.id.label("user_id"),
+            func.count(models.TrackedClub.id).label("tracked_club_count"),
+        )
+        .outerjoin(models.TrackedClub, models.User.id == models.TrackedClub.user_id)
+        .group_by(models.User.id)
+        .all()
+    )
+    return [dict(row._mapping) for row in rows]
