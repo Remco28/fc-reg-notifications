@@ -29,6 +29,7 @@ class Fencer(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False, index=True)
+    fencingtracker_id = Column(String, nullable=True, index=True)  # Optional external ID for tracked fencers
 
     registrations = relationship("Registration", back_populates="fencer")
 
@@ -73,6 +74,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    tracked_fencers = relationship(
+        "TrackedFencer",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class UserSession(Base):
@@ -102,4 +108,26 @@ class TrackedClub(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", "club_url", name="uq_tracked_clubs_user_club"),
+    )
+
+
+class TrackedFencer(Base):
+    __tablename__ = "tracked_fencers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    fencer_id = Column(String, nullable=False, index=True)  # fencingtracker numeric ID
+    display_name = Column(String, nullable=True)
+    weapon_filter = Column(String, nullable=True)
+    active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_checked_at = Column(DateTime, nullable=True)
+    failure_count = Column(Integer, default=0, nullable=False)
+    last_failure_at = Column(DateTime, nullable=True)
+    last_registration_hash = Column(String, nullable=True)  # Cache hash to detect changes
+
+    user = relationship("User", back_populates="tracked_fencers")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "fencer_id", name="uq_tracked_fencers_user_fencer"),
     )

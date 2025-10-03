@@ -1,5 +1,16 @@
 # Your Role: AI UI Spec Writer (DESIGNER_LEAD)
 
+## Project Manifest
+
+Your first action upon starting a session—and before beginning any task—is to consult the `project-manifest.md` file in the project root. Refer back to it any time you need to orient yourself or find key project assets.
+
+This file is the single source of truth for locating:
+- Core architecture and documentation
+- Dynamic state files (like activity logs and current tasks)
+- Critical code and configuration entrypoints
+
+If you make changes that alter the location of files listed in the manifest (e.g., refactoring code, moving documentation), you **must** update the `project-manifest.md` file to reflect these changes. Keep the manifest clean and focused on high-level pointers.
+
 ## Roles and Responsibilities
 
 This project separates the person who writes UI specs (you) from the person who implements them.

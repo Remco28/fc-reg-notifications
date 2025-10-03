@@ -8,6 +8,15 @@ from sqlalchemy.orm import Session, joinedload
 from . import models
 
 
+def get_fencer_by_fencingtracker_id(db: Session, fencingtracker_id: str) -> Optional[models.Fencer]:
+    """Get a fencer by their fencingtracker ID."""
+    return (
+        db.query(models.Fencer)
+        .filter(models.Fencer.fencingtracker_id == fencingtracker_id)
+        .first()
+    )
+
+
 def get_or_create_fencer(db: Session, name: str) -> models.Fencer:
     """Get an existing fencer by name or create a new one if not found."""
     fencer = db.query(models.Fencer).filter(models.Fencer.name == name).first()
@@ -70,7 +79,8 @@ def update_or_create_registration(
             registration.events = events
         # Otherwise, event already in the list, just update timestamp
 
-        registration.club_url = club_url
+        if not registration.club_url:
+            registration.club_url = club_url
         registration.last_seen_at = datetime.utcnow()
         db.flush()
         return registration, False
@@ -101,7 +111,8 @@ def update_or_create_registration(
                     registration.events = f"{existing_events}, {events}"
                 elif not existing_events:
                     registration.events = events
-                registration.club_url = club_url
+                if not registration.club_url:
+                    registration.club_url = club_url
                 registration.last_seen_at = datetime.utcnow()
                 db.flush()
                 return registration, False
@@ -343,3 +354,134 @@ def get_registration_counts_for_users(db: Session) -> List[dict]:
         .all()
     )
     return [dict(row._mapping) for row in rows]
+
+
+# Tracked fencer operations
+
+
+def create_tracked_fencer(
+    db: Session,
+    user_id: int,
+    fencer_id: str,
+    display_name: Optional[str] = None,
+    weapon_filter: Optional[str] = None,
+) -> models.TrackedFencer:
+    tracked = models.TrackedFencer(
+        user_id=user_id,
+        fencer_id=fencer_id,
+        display_name=display_name,
+        weapon_filter=weapon_filter,
+    )
+    db.add(tracked)
+    db.flush()
+    return tracked
+
+
+def get_tracked_fencer_by_id(
+    db: Session,
+    tracked_fencer_id: int,
+) -> Optional[models.TrackedFencer]:
+    return (
+        db.query(models.TrackedFencer)
+        .filter(models.TrackedFencer.id == tracked_fencer_id)
+        .one_or_none()
+    )
+
+
+def get_tracked_fencer_for_user(
+    db: Session,
+    user_id: int,
+    fencer_id: str,
+) -> Optional[models.TrackedFencer]:
+    return (
+        db.query(models.TrackedFencer)
+        .filter(
+            models.TrackedFencer.user_id == user_id,
+            models.TrackedFencer.fencer_id == fencer_id,
+        )
+        .one_or_none()
+    )
+
+
+def get_all_tracked_fencers_for_user(
+    db: Session,
+    user_id: int,
+    active_only: bool = True,
+) -> List[models.TrackedFencer]:
+    query = db.query(models.TrackedFencer).filter(
+        models.TrackedFencer.user_id == user_id
+    )
+    if active_only:
+        query = query.filter(models.TrackedFencer.active == True)
+    return query.order_by(models.TrackedFencer.created_at.desc()).all()
+
+
+def get_all_active_tracked_fencers(db: Session) -> List[models.TrackedFencer]:
+    """Get all active tracked fencers across all users (for scraper)."""
+    return (
+        db.query(models.TrackedFencer)
+        .filter(models.TrackedFencer.active == True)
+        .order_by(models.TrackedFencer.user_id, models.TrackedFencer.fencer_id)
+        .all()
+    )
+
+
+def update_tracked_fencer(
+    db: Session,
+    tracked_fencer: models.TrackedFencer,
+    display_name: Optional[str] = None,
+    weapon_filter: Optional[str] = None,
+) -> models.TrackedFencer:
+    if display_name is not None:
+        tracked_fencer.display_name = display_name
+    if weapon_filter is not None:
+        tracked_fencer.weapon_filter = weapon_filter
+    db.flush()
+    return tracked_fencer
+
+
+def deactivate_tracked_fencer(
+    db: Session,
+    tracked_fencer: models.TrackedFencer,
+) -> models.TrackedFencer:
+    tracked_fencer.active = False
+    db.flush()
+    return tracked_fencer
+
+
+def update_fencer_check_status(
+    db: Session,
+    tracked_fencer: models.TrackedFencer,
+    last_checked_at: datetime,
+    success: bool = True,
+) -> models.TrackedFencer:
+    """Update last_checked_at and failure tracking for a fencer."""
+    tracked_fencer.last_checked_at = last_checked_at
+    if success:
+        tracked_fencer.failure_count = 0
+        tracked_fencer.last_failure_at = None
+    else:
+        tracked_fencer.failure_count += 1
+        tracked_fencer.last_failure_at = last_checked_at
+    db.flush()
+    return tracked_fencer
+
+
+def get_registrations_for_fencer(
+    db: Session,
+    fencingtracker_id: str,
+    since: Optional[datetime] = None,
+) -> List[models.Registration]:
+    """Get registrations for a specific fencer by fencingtracker ID."""
+    query = (
+        db.query(models.Registration)
+        .options(
+            joinedload(models.Registration.fencer),
+            joinedload(models.Registration.tournament),
+        )
+        .join(models.Fencer)
+        .filter(models.Fencer.fencingtracker_id == fencingtracker_id)
+    )
+    if since is not None:
+        query = query.filter(models.Registration.created_at >= since)
+    return query.all()
