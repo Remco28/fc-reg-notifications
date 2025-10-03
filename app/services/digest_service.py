@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.database import SessionLocal
-from app.models import Registration, TrackedClub, User
+from app.models import Registration, TrackedClub, TrackedFencer, User
 
 from .notification_service import send_registration_notification
 
@@ -45,12 +45,19 @@ def apply_weapon_filter(
     return filtered
 
 
-def _collect_sections(
+def _collect_club_sections(
     db: Session,
     tracked_clubs: List[TrackedClub],
     since: datetime,
-) -> List[Dict[str, object]]:
+) -> tuple[List[Dict[str, object]], set[int]]:
+    """
+    Collect club sections for digest.
+
+    Returns:
+        Tuple of (sections list, set of registration IDs seen in clubs)
+    """
     sections: List[Dict[str, object]] = []
+    seen_registration_ids: set[int] = set()
 
     for tracked in tracked_clubs:
         registrations = crud.get_registrations_by_club_url(db, tracked.club_url, since=since)
@@ -61,6 +68,7 @@ def _collect_sections(
 
         section_rows = []
         for registration in filtered:
+            seen_registration_ids.add(registration.id)
             section_rows.append(
                 {
                     "fencer_name": registration.fencer.name,
@@ -78,12 +86,70 @@ def _collect_sections(
             }
         )
 
+    return sections, seen_registration_ids
+
+
+def _collect_fencer_sections(
+    db: Session,
+    tracked_fencers: List[TrackedFencer],
+    since: datetime,
+    seen_registration_ids: set[int],
+) -> List[Dict[str, object]]:
+    """
+    Collect fencer sections for digest, skipping registrations already in club sections.
+
+    Args:
+        db: Database session
+        tracked_fencers: List of tracked fencers
+        since: Only include registrations created after this timestamp
+        seen_registration_ids: Set of registration IDs already included in club sections
+
+    Returns:
+        List of fencer sections for digest
+    """
+    sections: List[Dict[str, object]] = []
+
+    for tracked_fencer in tracked_fencers:
+        registrations = crud.get_registrations_for_fencer(db, tracked_fencer.fencer_id, since=since)
+        filtered = apply_weapon_filter(registrations, tracked_fencer.weapon_filter)
+
+        # Deduplicate: skip registrations already in club sections
+        deduplicated = [reg for reg in filtered if reg.id not in seen_registration_ids]
+
+        if not deduplicated:
+            continue
+
+        section_rows = []
+        for registration in deduplicated:
+            section_rows.append(
+                {
+                    "fencer_name": registration.fencer.name,
+                    "events": registration.events,
+                    "tournament_name": registration.tournament.name,
+                    "fencer_id": tracked_fencer.fencer_id,
+                }
+            )
+
+        sections.append(
+            {
+                "fencer_name": tracked_fencer.display_name or f"Fencer {tracked_fencer.fencer_id}",
+                "fencer_id": tracked_fencer.fencer_id,
+                "rows": section_rows,
+            }
+        )
+
     return sections
 
 
-def format_digest_email(user: User, sections: List[Dict[str, object]]) -> str:
-    """Return a plain-text digest email body."""
-    total_registrations = sum(len(section["rows"]) for section in sections)
+def format_digest_email(
+    user: User,
+    club_sections: List[Dict[str, object]],
+    fencer_sections: List[Dict[str, object]],
+) -> str:
+    """Return a plain-text digest email body with club and fencer sections."""
+    total_registrations = sum(len(section["rows"]) for section in club_sections) + sum(
+        len(section["rows"]) for section in fencer_sections
+    )
 
     lines = [
         f"Hi {user.username},",
@@ -92,18 +158,42 @@ def format_digest_email(user: User, sections: List[Dict[str, object]]) -> str:
         "",
     ]
 
-    for section in sections:
-        club_name = section["club_name"]
-        lines.append(club_name)
-        lines.append("-" * len(club_name))
-
-        for row in section["rows"]:
-            lines.append(
-                f"* {row['fencer_name']} - {row['events']} ({row['tournament_name']})"
-            )
-
-        lines.append(f"Club page: {section['club_url']}")
+    # Club sections
+    if club_sections:
+        lines.append("TRACKED CLUBS")
+        lines.append("=" * 40)
         lines.append("")
+
+        for section in club_sections:
+            club_name = section["club_name"]
+            lines.append(club_name)
+            lines.append("-" * len(club_name))
+
+            for row in section["rows"]:
+                lines.append(
+                    f"* {row['fencer_name']} - {row['events']} ({row['tournament_name']})"
+                )
+
+            lines.append(f"Club page: {section['club_url']}")
+            lines.append("")
+
+    # Fencer sections
+    if fencer_sections:
+        lines.append("TRACKED FENCERS")
+        lines.append("=" * 40)
+        lines.append("")
+
+        for section in fencer_sections:
+            fencer_name = section["fencer_name"]
+            lines.append(fencer_name)
+            lines.append("-" * len(fencer_name))
+
+            for row in section["rows"]:
+                lines.append(
+                    f"* {row['events']} ({row['tournament_name']})"
+                )
+
+            lines.append("")
 
     lines.extend(
         [
@@ -126,20 +216,32 @@ def send_user_digest(db: Session, user: User) -> bool:
         logger.info("User %s has no email address configured; skipping", user.id)
         return False
 
+    # Get tracked clubs and fencers
     tracked_clubs = crud.get_tracked_clubs(db, user.id, active=True)
-    if not tracked_clubs:
-        logger.debug("User %s has no tracked clubs; skipping digest", user.id)
+    tracked_fencers = crud.get_all_tracked_fencers_for_user(db, user.id, active_only=True)
+
+    if not tracked_clubs and not tracked_fencers:
+        logger.debug("User %s has no tracked clubs or fencers; skipping digest", user.id)
         return False
 
     since = datetime.utcnow() - timedelta(hours=DIGEST_LOOKBACK_HOURS)
-    sections = _collect_sections(db, tracked_clubs, since)
 
-    if not sections:
+    # Collect club sections first (to build deduplication set)
+    club_sections, seen_registration_ids = _collect_club_sections(db, tracked_clubs, since)
+
+    # Collect fencer sections (with deduplication)
+    fencer_sections = _collect_fencer_sections(db, tracked_fencers, since, seen_registration_ids)
+
+    if not club_sections and not fencer_sections:
         logger.info("No new registrations for user %s; skipping digest", user.id)
         return False
 
-    subject = f"Daily fencing update ({sum(len(s['rows']) for s in sections)} new)"
-    body = format_digest_email(user, sections)
+    total_registrations = sum(len(s['rows']) for s in club_sections) + sum(
+        len(s['rows']) for s in fencer_sections
+    )
+
+    subject = f"Daily fencing update ({total_registrations} new)"
+    body = format_digest_email(user, club_sections, fencer_sections)
 
     send_registration_notification(
         fencer_name="",
@@ -152,10 +254,12 @@ def send_user_digest(db: Session, user: User) -> bool:
     )
 
     logger.info(
-        "Sent digest to user %s (%s) with %s new registrations",
+        "Sent digest to user %s (%s) with %s new registrations (%s clubs, %s fencers)",
         user.id,
         user.email,
-        sum(len(section["rows"]) for section in sections),
+        total_registrations,
+        len(club_sections),
+        len(fencer_sections),
     )
 
     return True

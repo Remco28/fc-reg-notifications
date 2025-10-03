@@ -10,13 +10,14 @@ from dotenv import load_dotenv
 
 from . import crud
 from .database import init_db, get_db, SessionLocal
-from .services import auth_service, digest_service, scraper_service
+from .services import auth_service, digest_service, scraper_service, fencer_scraper_service
 from .services.notification_service import send_registration_notification
 from .services.mailgun_client import NotificationError
 from .api import endpoints
 from .api.admin import router as admin_router
 from .api.auth import router as auth_router
 from .api.clubs import router as clubs_router
+from .api.tracked_fencers import router as fencers_router
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,6 +31,7 @@ app = FastAPI(
 app.include_router(endpoints.router)
 app.include_router(auth_router)
 app.include_router(clubs_router)
+app.include_router(fencers_router)
 app.include_router(admin_router)
 
 cli = typer.Typer()
@@ -74,6 +76,28 @@ def _run_scrape_job(club_url: str) -> None:
         )
     except Exception:  # pragma: no cover - logged for ops visibility
         logger.exception("Scrape failed for %s", club_url)
+    finally:
+        session.close()
+
+
+def _run_fencer_scrape_job() -> None:
+    """Scrape all active tracked fencers."""
+    session = SessionLocal()
+
+    try:
+        stats = fencer_scraper_service.scrape_all_tracked_fencers(session)
+        if stats["enabled"]:
+            logger.info(
+                "Fencer scrape finished (scraped=%s skipped=%s failed=%s total_registrations=%s)",
+                stats["fencers_scraped"],
+                stats["fencers_skipped"],
+                stats["fencers_failed"],
+                stats["total_registrations"],
+            )
+        else:
+            logger.info("Fencer scraping disabled")
+    except Exception:  # pragma: no cover - logged for ops visibility
+        logger.exception("Fencer scrape failed")
     finally:
         session.close()
 
@@ -187,6 +211,16 @@ def schedule_scraper(
             next_run_time=datetime.utcnow(),
         )
         typer.echo(f"Scheduled job {job_id} for {url}")
+
+    # Add fencer scraping job (runs on same interval as club scraping)
+    scheduler.add_job(
+        _run_fencer_scrape_job,
+        "interval",
+        minutes=configured_interval,
+        id="scrape_fencers",
+        next_run_time=datetime.utcnow(),
+    )
+    typer.echo(f"Scheduled fencer scraping job (interval: {configured_interval} minutes)")
 
     try:
         scheduler.start()

@@ -10,6 +10,7 @@ from app import crud
 from app.database import get_db
 from app.models import User
 
+from .tracked_fencers import build_fencer_management_context
 from .dependencies import get_current_user, get_optional_user, templates
 
 
@@ -34,12 +35,18 @@ def dashboard(
 ):
     tracked_clubs = crud.get_tracked_clubs(db, user.id, active=True)
     inactive_clubs = crud.get_tracked_clubs(db, user.id, active=False)
+    fencer_context = build_fencer_management_context(db, user)
 
     context = {
         "request": request,
         "user": user,
         "tracked_club_count": len(tracked_clubs),
         "inactive_club_count": len(inactive_clubs),
+        "tracked_fencer_count": len(fencer_context["active_fencers"]),
+        "inactive_fencer_count": len(fencer_context["inactive_fencers"]),
+        "active_fencers": fencer_context["active_fencers"],
+        "inactive_fencers": fencer_context["inactive_fencers"],
+        "fencer_weapon_options": fencer_context["weapon_options"],
     }
 
     return templates.TemplateResponse("dashboard.html", context)

@@ -254,7 +254,6 @@ For each user:
          </tbody>
        </table>
      </section>
-     ```
    - **Data available:** Date, Tournament name, Event/weapon
    - **Scraping strategy:** Parse table rows, extract registrations
    - **Name changes:** Slug may change but ID remains stable

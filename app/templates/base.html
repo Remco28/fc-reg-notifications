@@ -125,6 +125,66 @@
         details summary {
             cursor: pointer;
         }
+        .muted {
+            color: var(--muted-color);
+        }
+        .fencers-card {
+            margin-top: 2rem;
+            display: grid;
+            gap: 1.5rem;
+        }
+        .fencers-card header h2 {
+            margin-bottom: 0.25rem;
+        }
+        .fencer-list {
+            display: grid;
+            gap: 1rem;
+        }
+        .fencer-item {
+            border: 1px solid var(--card-border-color, #d0d7de);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .fencer-item header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .fencer-item dl {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+        .fencer-item dl dt {
+            font-weight: bold;
+        }
+        .fencer-item dl dd {
+            margin: 0;
+        }
+        .inactive-fencers {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            gap: 0.5rem;
+        }
+        .inactive-fencers li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px dashed var(--card-border-color, #d0d7de);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+        }
+        .inline {
+            display: inline;
+        }
+        .deactivate-form {
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
     </style>
     {% block extra_styles %}{% endblock %}
 </head>
@@ -138,6 +198,7 @@
                 {% if user %}
                 <li><a href="/dashboard">Dashboard</a></li>
                 <li><a href="/clubs">Tracked Clubs</a></li>
+                <li><a href="/fencers">Tracked Fencers</a></li>
                 {% if user.is_admin %}
                 <li><a href="/admin/users">Admin</a></li>
                 {% endif %}

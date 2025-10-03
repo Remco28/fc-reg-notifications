@@ -149,8 +149,15 @@ The system is planned to evolve from a single-tenant notification system to a mu
 
 - Planning: `comms/planning/2025-10-01-multi-user-enhancement.md`
 - Task specs: `comms/tasks/YYYY-MM-DD-*.md`
-- Ops/Deployment: *(not yet authored)*
+- Ops/Deployment: `docs/mailgun-ops.md`
 - ADRs: *(none yet)*
+
+## Architectural Principles
+
+- **Iterative Scope:** The project started with a minimal core feature set (a single scraper, persistence, and notifications) and has expanded iteratively. This approach prioritizes delivering a working end-to-end slice of functionality early.
+- **Schema-First Design:** Core data models (`users`, `registrations`, etc.) and their relationships were defined early with clear uniqueness constraints to ensure data integrity and prevent duplicate alerts.
+- **Service Abstraction:** External integrations, like the Mailgun API for email, are wrapped in dedicated service modules. This isolates external dependencies and simplifies future changes or provider swaps.
+- **Configuration-driven Behavior:** System behavior, such as scrape frequency and API keys, is controlled via environment variables, not hard-coded constants.
 
 ---
 
