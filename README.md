@@ -84,9 +84,12 @@ Key endpoints while developing:
 #### Manage tracked fencers
 
 1. Open the "Tracked Fencers" card on the dashboard or visit `/fencers`.
-2. Paste the numeric `fencer_id` or the full fencingtracker profile URL (slugged or slugless, e.g., `https://www.fencingtracker.com/p/12345`). The form extracts the ID automatically.
-3. Optionally add a display name and comma-separated weapon filter (`foil,epee,saber`). If you leave the name blank, the app derives one from the URL or profile when possible. Leave the filter blank to track every weapon.
-4. Save changes. Scrapes respect delay and cooldown settings, so new registrations may take a few minutes to appear.
+2. **Paste the full fencingtracker profile URL** (e.g., `https://fencingtracker.com/p/100349376/Jake-Mann`). The URL **must include the name slug** (e.g., `/Jake-Mann`) to work correctly.
+3. The fencer's display name is automatically extracted from the URL slug.
+4. Optionally add a comma-separated weapon filter (`foil,epee,saber`). Leave blank to track every weapon.
+5. Click "Track fencer" to save. Scrapes respect delay and cooldown settings, so new registrations may take a few minutes to appear.
+
+**Important:** The scraper processes only the "Registrations" table from fencer profiles, not historical "Results" data. Use the DELETE button (not just deactivate) to permanently remove a tracked fencer and start fresh if needed.
 
 #### Run the scheduled scraper
 

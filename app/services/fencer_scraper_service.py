@@ -109,7 +109,10 @@ def _is_registration_table(table) -> bool:
     has_event_or_tournament = has_any(["event", "tournament"])
     has_date = has_any(["date"])
 
-    return has_event_or_tournament and has_date
+    # Exclude results tables (they have "place" or "rating" columns)
+    has_results_columns = has_any(["place", "rating", "earned", "class"])
+
+    return has_event_or_tournament and has_date and not has_results_columns
 
 
 def _compute_registration_hash(tables: List) -> str:
@@ -197,7 +200,7 @@ def scrape_fencer_profile(
     Raises:
         Exception: If fetching or parsing fails after all retries
     """
-    profile_url = build_fencer_profile_url(fencer_id)
+    profile_url = build_fencer_profile_url(fencer_id, display_name)
     log_name = display_name or f"ID:{fencer_id}"
 
     logger.info(f"[{log_name}] Fetching fencer profile: {profile_url}")
@@ -493,8 +496,13 @@ def scrape_all_tracked_fencers(db: Session) -> Dict[str, any]:
 
 
 def fetch_fencer_display_name(fencer_id: str, timeout: float = 3.0) -> Optional[str]:
-    """Fetch a fencer profile and attempt to extract the display name."""
-    profile_url = build_fencer_profile_url(fencer_id)
+    """Fetch a fencer profile and attempt to extract the display name.
+
+    Note: This function attempts to fetch without a slug, which may fail.
+    It's used as a fallback when no display name is available yet.
+    """
+    # Try without slug first (may 404, that's expected)
+    profile_url = build_fencer_profile_url(fencer_id, None)
 
     try:
         response = requests.get(

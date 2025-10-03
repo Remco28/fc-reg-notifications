@@ -265,3 +265,18 @@
 
 [2025-10-03T16:08Z] [ARCHITECT]: SPEC READY - 2025-10-03-tracked-fencer-url-and-name-fixes.md
 [2025-10-03T16:10Z] [DEVELOPER]: IMPL IN_PROGRESS: Fixing slugless fencingtracker URLs and auto-name behavior for tracked fencers
+
+[2025-10-03T18:00Z] [ARCHITECT]: E2E TESTING SESSION - Phase 2 tracked fencer functionality
+- Environment: Fresh database from Alembic migrations, test user frank, Mailgun operational
+- Critical bugs discovered and resolved:
+  1. Database schema mismatch (missing club_url column) - Fixed by recreating from migrations
+  2. Fencer profile URLs missing name slug (404 errors) - Fixed build_fencer_profile_url()
+  3. Form not saving display_name - Resolved by simplifying to URL-only input
+  4. Fencer scraper processing Results as Registrations - Fixed table detection heuristic
+  5. Missing DELETE functionality - Added permanent delete route and UI button
+- Test scenarios: All PASS (database migration, fencer tracking, URL generation, scraper accuracy, digest delivery, DELETE)
+- Production readiness: APPROVED with caveats (HTTPS required, technical debt noted)
+- Files modified: fencer_validation_service.py, fencer_scraper_service.py, tracked_fencers.py (API + template), .env
+- Database: Recreated from scratch, cleared 110 contaminated records, re-scraped 11 clean registrations
+- Detailed report: comms/tasks/2025-10-03-phase2-end-to-end-testing.md
+- Status: Phase 2 complete and production-ready

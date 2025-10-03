@@ -20,13 +20,9 @@
         <h3>Add a fencer</h3>
         <form method="post" action="/fencers">
             <label>
-                Fencer ID or profile URL
-                <input type="text" name="fencer_id" required placeholder="Paste the fencingtracker profile URL or numeric ID">
-                <small>Accepts a numeric ID (e.g., <strong>12345</strong>) or the full fencingtracker profile URL (with or without a slug). Leave the name blank and we'll try to fill it in automatically.</small>
-            </label>
-            <label>
-                Display name (optional)
-                <input type="text" name="display_name" placeholder="Defaults to the name scraped from fencingtracker">
+                Fencer profile URL
+                <input type="text" name="fencer_id" required placeholder="https://fencingtracker.com/p/100235805/Nicholas-Iarikov">
+                <small>Paste the full fencingtracker profile URL. We'll automatically extract the fencer's name from the URL.</small>
             </label>
             <label>
                 Weapons (optional)
@@ -100,9 +96,14 @@
                     </label>
                     <button type="submit">Save changes</button>
                 </form>
-                <form method="post" action="/fencers/{{ fencer.id }}/deactivate" class="inline deactivate-form">
-                    <button type="submit" class="outline" onclick="return confirm('Deactivate this fencer?');">Deactivate</button>
-                </form>
+                <div style="display: flex; gap: 0.5rem;">
+                    <form method="post" action="/fencers/{{ fencer.id }}/deactivate" class="inline deactivate-form">
+                        <button type="submit" class="outline" onclick="return confirm('Deactivate this fencer?');">Deactivate</button>
+                    </form>
+                    <form method="post" action="/fencers/{{ fencer.id }}/delete" class="inline delete-form">
+                        <button type="submit" class="outline secondary" onclick="return confirm('Permanently DELETE this fencer? This cannot be undone.');">Delete</button>
+                    </form>
+                </div>
             </details>
         </article>
         {% endfor %}

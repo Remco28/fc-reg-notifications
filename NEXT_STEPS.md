@@ -6,22 +6,36 @@
 - [x] Deliver daily digest generation plus CLI helpers (`digest-scheduler`, `send-user-digest`).
 - [x] Add admin panel for user oversight and CLI bootstrap command (`create-admin`).
 
-## Phase 2: Fencer Tracking (In Progress)
+## Phase 2: Fencer Tracking (COMPLETE ✅)
 - [x] Finalize functional spec for tracked fencers and search UX (`comms/tasks/archive/2025-10-05-tracked-fencer-backend-spec.md`).
 - [x] Extend schema with `tracked_fencers` and fencer identifiers from fencingtracker profiles (migrations applied).
 - [x] Update scraper/digest logic to populate the "Tracked Fencers" digest section (hash caching + dedupe live).
-- [ ] Add UI workflows for adding, editing, and deactivating tracked fencers (`2025-10-06-tracked-fencer-ui-session-flow.md`).
-- [x] Expand tests to cover fencer lookups and digest de-duplication across club/fencer sections (`2025-10-06-phase2-testing-verification.md`).
+- [x] Add UI workflows for adding, editing, and deactivating tracked fencers (`comms/tasks/archive/2025-10-06-tracked-fencer-ui-session-flow.md`).
+- [x] Expand tests to cover fencer lookups and digest de-duplication across club/fencer sections (`comms/tasks/archive/2025-10-06-phase2-testing-verification.md`).
   - [x] Added service-level tests for scraper cooldown and digest generation (`tests/services/`).
   - [x] Added CRUD and validation regression tests (`tests/test_crud_tracked_fencers.py`, `tests/services/test_fencer_validation_service.py`).
   - [x] Added UI tests for dashboard rendering and form submissions (`tests/test_tracked_fencer_routes.py`).
   - [x] Added E2E smoke test for the complete fencer tracking flow (`tests/e2e/test_tracked_fencer_flow.py`).
   - [x] Created testing documentation (`docs/TESTING.md`).
+- [x] **End-to-end production readiness testing** (`comms/tasks/2025-10-03-phase2-end-to-end-testing.md`)
+  - [x] Fixed database schema migration issues
+  - [x] Fixed fencer profile URL generation (slug handling)
+  - [x] Simplified fencer tracking to URL-only input
+  - [x] Fixed scraper to exclude Results tables
+  - [x] Added DELETE functionality for tracked fencers
+  - [x] Verified digest delivery with correct data
 
 ## Operational Follow-Ups
 - [x] Document Mailgun configuration, domain verification, and bounce/complaint handling playbook (`docs/mailgun-ops.md`).
 - [x] Add environment documentation for `ADMIN_EMAIL`, digest scheduler process management, and secure cookie settings in deployment notes.
-- [ ] Schedule live end-to-end test of digest flow once production Mailgun sender is active.
+- [x] End-to-end testing of digest flow completed successfully (2025-10-03).
+
+## Production Deployment (Next Priority)
+- [ ] Deploy to production environment with HTTPS enabled
+- [ ] Set `SESSION_COOKIE_SECURE=true` in production .env
+- [ ] Verify all environment variables configured
+- [ ] Run post-deploy validation checklist (see `comms/tasks/2025-10-03-phase2-end-to-end-testing.md`)
+- [ ] Monitor initial user signups and digest delivery
 
 ## Documentation & Tooling
 - [ ] Publish initial API/UI usage doc (FastAPI docs or internal runbook) summarizing auth, club management, and admin endpoints.

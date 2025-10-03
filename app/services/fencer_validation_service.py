@@ -140,10 +140,16 @@ def build_fencer_profile_url(fencer_id: str, name_slug: Optional[str] = None) ->
 
     Args:
         fencer_id: Numeric fencer ID
-        name_slug: Optional name slug for logging (not used in URL construction)
+        name_slug: Optional name slug (e.g., "Jake-Mann"). If provided, constructs full URL.
+                  Can also be display_name which will be converted to slug format.
 
     Returns:
         Full fencingtracker profile URL
     """
-    # Format: https://www.fencingtracker.com/p/{fencer_id}
+    if name_slug:
+        # Convert to URL-safe slug format (replace spaces with dashes, etc.)
+        slug = name_slug.strip().replace(" ", "-")
+        return f"https://www.fencingtracker.com/p/{fencer_id}/{slug}"
+
+    # Fallback: URL without slug (may result in 404 on fencingtracker)
     return f"https://www.fencingtracker.com/p/{fencer_id}"

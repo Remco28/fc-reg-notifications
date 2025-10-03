@@ -78,7 +78,7 @@ def _serialize_fencer(fencer: TrackedFencer) -> Dict[str, Any]:
         "last_checked": _format_timestamp(fencer.last_checked_at),
         "last_failure": _format_timestamp(fencer.last_failure_at),
         "failure_count": fencer.failure_count,
-        "profile_url": build_fencer_profile_url(fencer.fencer_id),
+        "profile_url": build_fencer_profile_url(fencer.fencer_id, fencer.display_name),
     }
 
 
@@ -152,9 +152,9 @@ async def create_tracked_fencer(
 ):
     form = await request.form()
     fencer_id_input = (form.get("fencer_id") or "").strip()
-    display_name = (form.get("display_name") or "").strip() or None
     weapon_filter_raw = (form.get("weapon_filter") or "").strip()
 
+    # Extract fencer ID and slug from URL
     normalized_fencer_id, error_msg = fencer_validation_service.normalize_tracked_fencer_id(
         fencer_id_input
     )
@@ -169,6 +169,10 @@ async def create_tracked_fencer(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
     fencer_id = normalized_fencer_id or ""
+
+    # Extract display name from URL slug
+    slug = fencer_validation_service.extract_profile_slug(fencer_id_input)
+    display_name = fencer_validation_service.derive_display_name_from_slug(slug)
 
     try:
         weapon_filter = _handle_weapon_filter(weapon_filter_raw)
@@ -210,20 +214,15 @@ async def create_tracked_fencer(
             status_code=status.HTTP_303_SEE_OTHER,
         )
 
-    derived_display_name: Optional[str] = None
-    if display_name is None:
-        slug = fencer_validation_service.extract_profile_slug(fencer_id_input)
-        derived_display_name = fencer_validation_service.derive_display_name_from_slug(slug)
+    # Fallback: try to get name from cache or scrape if slug didn't provide a name
+    if not display_name:
+        cached_fencer = crud.get_fencer_by_fencingtracker_id(db, fencer_id)
+        if cached_fencer and cached_fencer.name:
+            display_name = cached_fencer.name
+        else:
+            display_name = fencer_scraper_service.fetch_fencer_display_name(fencer_id)
 
-        if not derived_display_name:
-            cached_fencer = crud.get_fencer_by_fencingtracker_id(db, fencer_id)
-            if cached_fencer and cached_fencer.name:
-                derived_display_name = cached_fencer.name
-
-        if not derived_display_name:
-            derived_display_name = fencer_scraper_service.fetch_fencer_display_name(fencer_id)
-
-    final_display_name = display_name or derived_display_name
+    final_display_name = display_name
 
     try:
         crud.create_tracked_fencer(
@@ -290,6 +289,26 @@ async def edit_tracked_fencer(
 
     return RedirectResponse(
         url="/fencers?success=Fencer%20updated",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.post("/fencers/{tracked_fencer_id}/delete")
+async def delete_tracked_fencer(
+    tracked_fencer_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    fencer = crud.get_tracked_fencer_by_id(db, tracked_fencer_id)
+    if not fencer or fencer.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tracked fencer not found")
+
+    # Permanently delete the fencer
+    db.delete(fencer)
+    db.commit()
+
+    return RedirectResponse(
+        url="/fencers?success=Fencer%20deleted",
         status_code=status.HTTP_303_SEE_OTHER,
     )
 

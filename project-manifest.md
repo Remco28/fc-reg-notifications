@@ -16,9 +16,7 @@
 
 - **Activity Log:** `comms/log.md`
 - **Active Task Specs:** `comms/tasks/`
-  - `2025-10-05-mailgun-ops-notes.md` (ops documentation)
-  - `2025-10-06-tracked-fencer-ui-session-flow.md` (UI implementation spec)
-  - `2025-10-06-phase2-testing-verification.md` (testing coverage plan)
+  - `2025-10-03-phase2-end-to-end-testing.md` (E2E testing session report - COMPLETED)
 - **Completed Specs Archive:** `comms/tasks/archive/`
 - **Recent Code Status Summary:** `README.md` (Quick Start / setup instructions)
 
