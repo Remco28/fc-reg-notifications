@@ -30,6 +30,13 @@
 - [x] Add environment documentation for `ADMIN_EMAIL`, digest scheduler process management, and secure cookie settings in deployment notes.
 - [x] End-to-end testing of digest flow completed successfully (2025-10-03).
 
+## Security Hardening (IMPLEMENTED - Pending Testing & Review)
+- [x] **CSRF Tokens:** Implemented CSRF protection on all state-changing forms (`comms/tasks/2025-10-03-security-hardening-tech-debt.md`)
+- [x] **Rate Limiting:** Implemented rate limiting on login (5/5min) and registration (3/hour) endpoints
+- [x] **Deprecation Warnings:** Fixed all `datetime.utcnow()` → `datetime.now(UTC)` deprecations
+- [ ] **Manual Security Testing:** Run through security testing guide (`docs/SECURITY-TESTING.md`) - 12 tests covering CSRF and rate limiting
+- [ ] **Architect Code Review:** Request review of security hardening implementation before archiving spec
+
 ## Production Deployment (Next Priority)
 - [ ] Deploy to production environment with HTTPS enabled
 - [ ] Set `SESSION_COOKIE_SECURE=true` in production .env
@@ -51,10 +58,6 @@
 - [ ] **Per-User Timezones:** Allow users to set their own timezone for daily digests.
 
 ### Technical Debt & Refinements
-- [ ] **Deprecation Warnings:** Replace `datetime.utcnow()` with `datetime.now(datetime.UTC)` throughout the codebase to resolve Python 3.12 warnings.
+- [x] **Deprecation Warnings:** Replace `datetime.utcnow()` with `datetime.now(datetime.UTC)` throughout the codebase to resolve Python 3.12 warnings.
 - [ ] **SQLAlchemy 2.0 Migration:** Update `declarative_base()` usage to the modern `sqlalchemy.orm.declarative_base()` pattern.
 - [ ] **HTML Emails:** Upgrade the plain-text digest emails to use styled HTML templates.
-
-### Security & Hardening
-- [ ] **CSRF Tokens:** Add CSRF tokens to all state-changing forms as a defense-in-depth measure alongside SameSite cookies.
-- [ ] **Rate Limiting:** Implement rate limiting on authentication endpoints (`/auth/login`, `/auth/register`) to protect against brute-force attacks.
