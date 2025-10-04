@@ -10,7 +10,7 @@ from app import crud
 from app.database import get_db
 from app.models import User
 
-from .dependencies import get_current_user, require_admin, templates
+from .dependencies import get_current_user, require_admin, templates, validate_csrf
 
 
 router = APIRouter(prefix="/admin")
@@ -54,6 +54,7 @@ async def update_user(
     request: Request,
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     payload = await request.json()
     updates: Dict[str, Any] = {}

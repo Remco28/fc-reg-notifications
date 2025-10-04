@@ -9,12 +9,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User
-from app.services import auth_service
+from app.services import auth_service, rate_limit_service
 
 from .dependencies import (
     SESSION_COOKIE_NAME,
+    check_login_rate_limit,
+    check_register_rate_limit,
     get_current_user,
     get_optional_user,
+    validate_csrf,
     templates,
 )
 
@@ -49,7 +52,11 @@ def register_page(
 
 
 @router.post("/auth/register")
-async def register_user(request: Request, db: Session = Depends(get_db)) -> Response:
+async def register_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(check_register_rate_limit),
+) -> Response:
     payload: Dict[str, Any]
     content_type = request.headers.get("content-type", "")
 
@@ -123,7 +130,11 @@ def login_page(
 
 
 @router.post("/auth/login")
-async def login_user(request: Request, db: Session = Depends(get_db)) -> Response:
+async def login_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    _rate_limit: None = Depends(check_login_rate_limit),
+) -> Response:
     payload: Dict[str, Any]
     content_type = request.headers.get("content-type", "")
 
@@ -152,6 +163,9 @@ async def login_user(request: Request, db: Session = Depends(get_db)) -> Respons
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
+    # Reset rate limit on successful login
+    rate_limit_service.reset_rate_limit(f"login:{username}")
+
     token, _ = auth_service.create_session(db, user.id)
     db.commit()
 
@@ -169,6 +183,7 @@ def logout_user(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
     session_token: Optional[str] = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+    _csrf: None = Depends(validate_csrf),
 ) -> Response:
     auth_service.logout(db, session_token)
     db.commit()

@@ -1,7 +1,7 @@
 """Daily digest email generation and scheduling."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Dict, Iterable, List, Optional
 
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -224,7 +224,7 @@ def send_user_digest(db: Session, user: User) -> bool:
         logger.debug("User %s has no tracked clubs or fencers; skipping digest", user.id)
         return False
 
-    since = datetime.utcnow() - timedelta(hours=DIGEST_LOOKBACK_HOURS)
+    since = datetime.now(UTC) - timedelta(hours=DIGEST_LOOKBACK_HOURS)
 
     # Collect club sections first (to build deduplication set)
     club_sections, seen_registration_ids = _collect_club_sections(db, tracked_clubs, since)

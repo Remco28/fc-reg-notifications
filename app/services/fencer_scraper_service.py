@@ -7,7 +7,7 @@ import time
 import logging
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional
 
@@ -57,7 +57,7 @@ def _should_skip_fencer(tracked_fencer) -> bool:
 
     # Check if cooldown period has expired
     cooldown_seconds = FENCER_FAILURE_COOLDOWN_MIN * 60
-    time_since_failure = (datetime.utcnow() - tracked_fencer.last_failure_at).total_seconds()
+    time_since_failure = (datetime.now(UTC) - tracked_fencer.last_failure_at).total_seconds()
 
     if time_since_failure < cooldown_seconds:
         logger.debug(
@@ -451,7 +451,7 @@ def scrape_all_tracked_fencers(db: Session) -> Dict[str, any]:
             )
 
             # Update check status (success) and cache hash
-            update_fencer_check_status(db, tracked_fencer, datetime.utcnow(), success=True)
+            update_fencer_check_status(db, tracked_fencer, datetime.now(UTC), success=True)
             tracked_fencer.last_registration_hash = result["hash"]
             db.commit()
 
@@ -471,7 +471,7 @@ def scrape_all_tracked_fencers(db: Session) -> Dict[str, any]:
 
         except Exception as e:
             # Update check status (failure)
-            update_fencer_check_status(db, tracked_fencer, datetime.utcnow(), success=False)
+            update_fencer_check_status(db, tracked_fencer, datetime.now(UTC), success=False)
             db.commit()
 
             failed_count += 1

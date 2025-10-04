@@ -3,13 +3,14 @@
 import hashlib
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Optional, Tuple
 
 from sqlalchemy.orm import Session
 
 from .. import crud
 from ..models import User
+from . import csrf_service
 from .notification_service import send_registration_notification
 
 try:  # pragma: no cover - executed when bcrypt is available
@@ -114,9 +115,16 @@ def generate_session_token() -> str:
 
 def create_session(db: Session, user_id: int) -> Tuple[str, datetime]:
     """Create a new session for the given user."""
-    expires_at = datetime.utcnow() + timedelta(days=SESSION_DURATION_DAYS)
+    expires_at = datetime.now(UTC) + timedelta(days=SESSION_DURATION_DAYS)
     token = generate_session_token()
-    crud.create_session(db, user_id=user_id, session_token=token, expires_at=expires_at)
+    csrf_token = csrf_service.generate_csrf_token()
+    crud.create_session(
+        db,
+        user_id=user_id,
+        session_token=token,
+        expires_at=expires_at,
+        csrf_token=csrf_token,
+    )
     return token, expires_at
 
 
@@ -129,7 +137,14 @@ def validate_session(db: Session, session_token: Optional[str]) -> Optional[User
     if not session:
         return None
 
-    if session.expires_at < datetime.utcnow():
+    # Handle both naive and aware datetimes for backwards compatibility
+    now = datetime.now(UTC)
+    expires_at = session.expires_at
+    if expires_at.tzinfo is None:
+        # Convert naive datetime to UTC for comparison
+        expires_at = expires_at.replace(tzinfo=UTC)
+
+    if expires_at < now:
         crud.delete_session(db, session_token)
         return None
 

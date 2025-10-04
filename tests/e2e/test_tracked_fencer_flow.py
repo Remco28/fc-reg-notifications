@@ -6,7 +6,7 @@ from unittest.mock import patch
 from app import crud, models
 from app.database import SessionLocal, engine
 from app.services import digest_service
-from app.main import _run_club_scrape_job, _run_fencer_scrape_job
+from app.main import _run_scrape_job, _run_fencer_scrape_job
 
 @pytest.fixture(scope="module")
 def db_session():
@@ -57,7 +57,7 @@ def test_e2e_tracked_fencer_flow(db_session, monkeypatch):
 
 
     # 2. Run scrapers
-    _run_club_scrape_job()
+    _run_scrape_job(tracked_club.club_url)
     _run_fencer_scrape_job()
 
     # 3. Run digest and assert

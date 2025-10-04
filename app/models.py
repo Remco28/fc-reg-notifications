@@ -87,6 +87,7 @@ class UserSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     session_token = Column(String, unique=True, nullable=False, index=True)
+    csrf_token = Column(String(128), nullable=True)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

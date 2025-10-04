@@ -253,6 +253,42 @@ All configuration is handled via environment variables. See `docs/ARCHITECTURE.m
 | `ADMIN_EMAIL` | Optional address for new user signup alerts | `owner@example.com` |
 | `SESSION_COOKIE_SECURE` | Set to `true` in production to force secure cookies | `true` |
 
+### Security Configuration
+
+#### CSRF Protection
+
+All state-changing endpoints (POST/PATCH/DELETE) are protected against Cross-Site Request Forgery (CSRF) attacks:
+
+- CSRF tokens are automatically generated and stored in user sessions
+- Tokens are embedded in HTML forms via the `{{ csrf_token() }}` template helper
+- API requests must include the token in the `X-CSRF-Token` header
+- Invalid or missing tokens result in 403 Forbidden responses
+
+**Note:** Login and registration endpoints do not require CSRF tokens (no existing session to protect), but are protected by rate limiting instead.
+
+#### Rate Limiting
+
+Authentication endpoints are protected against brute-force attacks with configurable rate limits:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOGIN_RATE_LIMIT_ATTEMPTS` | `5` | Maximum login attempts per username within the window |
+| `LOGIN_RATE_LIMIT_WINDOW_SEC` | `300` | Time window for login rate limiting (5 minutes) |
+| `REGISTER_RATE_LIMIT_ATTEMPTS` | `3` | Maximum registration attempts per IP within the window |
+| `REGISTER_RATE_LIMIT_WINDOW_SEC` | `3600` | Time window for registration rate limiting (1 hour) |
+
+**Rate Limiting Behavior:**
+- Login attempts are tracked per username
+- Registration attempts are tracked per client IP address
+- Successful logins reset the rate limit counter for that username
+- Rate limits are stored in-memory and reset on process restart
+- 429 Too Many Requests responses include a `Retry-After` header
+
+**Production Considerations:**
+- In-memory rate limiting is suitable for single-process deployments
+- For multi-process or distributed deployments, consider external rate limiting (nginx, Cloudflare, or Redis-backed service)
+- If behind a proxy, the service reads the `X-Forwarded-For` header to determine client IP
+
 ## Development
 
 See `docs/ARCHITECTURE.md` for detailed system architecture and development guidelines.

@@ -17,6 +17,7 @@
 - **Activity Log:** `comms/log.md`
 - **Active Task Specs:** `comms/tasks/`
   - `2025-10-03-phase2-end-to-end-testing.md` (E2E testing session report - COMPLETED)
+  - `2025-10-03-security-hardening-tech-debt.md` (Security hardening spec - IMPLEMENTED, pending review)
 - **Completed Specs Archive:** `comms/tasks/archive/`
 - **Recent Code Status Summary:** `README.md` (Quick Start / setup instructions)
 
@@ -27,7 +28,7 @@
 - **FastAPI Application Entrypoint:** `app/main.py`
 - **Database Models & ORM:** `app/models.py`
 - **CRUD Layer:** `app/crud.py`
-- **Service Logic:** `app/services/` (notably `fencer_scraper_service.py`, `digest_service.py`, `fencer_validation_service.py`)
+- **Service Logic:** `app/services/` (notably `fencer_scraper_service.py`, `digest_service.py`, `fencer_validation_service.py`, `csrf_service.py`, `rate_limit_service.py`)
 - **API Routes:** `app/api/` (`endpoints.py`, `auth.py`, `clubs.py`, `admin.py`)
 - **Templating / UI:** `app/templates/`
 - **Background Jobs & Scheduling:** see helpers in `app/main.py` and `app/services/`
@@ -40,7 +41,7 @@
 ## 4. Operations & Tooling
 *Supporting documentation and scripts for deployment, email delivery, and runbook-style tasks.*
 
-- **Planned Mailgun Ops Guide:** `comms/tasks/2025-10-05-mailgun-ops-notes.md` (spec for upcoming doc)
+- **Mailgun Ops Guide:** `docs/mailgun-ops.md` (email delivery operations)
 - **Scheduler & CLI Commands:** outlined in `README.md` (see Quick Start & Usage sections)
 - **Virtualenv / Local Setup:** `fc-reg_env/` (local environment), instructions in `README.md`
 

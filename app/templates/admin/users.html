@@ -54,6 +54,8 @@
 {% block extra_scripts %}
 <script>
 (() => {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfMeta ? csrfMeta.content : '';
     function showError(message) {
         alert(message || 'Unable to update user.');
     }
@@ -61,7 +63,10 @@
     async function patchUser(userId, payload) {
         const response = await fetch(`/admin/users/${userId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+            },
             body: JSON.stringify(payload),
         });
 

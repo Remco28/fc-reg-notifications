@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional
 
 from sqlalchemy import func
@@ -81,7 +81,7 @@ def update_or_create_registration(
 
         if not registration.club_url:
             registration.club_url = club_url
-        registration.last_seen_at = datetime.utcnow()
+        registration.last_seen_at = datetime.now(UTC)
         db.flush()
         return registration, False
     else:
@@ -91,7 +91,7 @@ def update_or_create_registration(
             tournament_id=tournament.id,
             events=events,
             club_url=club_url,
-            last_seen_at=datetime.utcnow()
+            last_seen_at=datetime.now(UTC)
         )
         db.add(registration)
         try:
@@ -113,7 +113,7 @@ def update_or_create_registration(
                     registration.events = events
                 if not registration.club_url:
                     registration.club_url = club_url
-                registration.last_seen_at = datetime.utcnow()
+                registration.last_seen_at = datetime.now(UTC)
                 db.flush()
                 return registration, False
             else:
@@ -184,11 +184,13 @@ def create_session(
     user_id: int,
     session_token: str,
     expires_at: datetime,
+    csrf_token: Optional[str] = None,
 ) -> models.UserSession:
     session = models.UserSession(
         user_id=user_id,
         session_token=session_token,
         expires_at=expires_at,
+        csrf_token=csrf_token,
     )
     db.add(session)
     db.flush()
@@ -217,7 +219,7 @@ def delete_session(db: Session, session_token: str) -> None:
 def cleanup_expired_sessions(db: Session) -> int:
     deleted = (
         db.query(models.UserSession)
-        .filter(models.UserSession.expires_at < datetime.utcnow())
+        .filter(models.UserSession.expires_at < datetime.now(UTC))
         .delete(synchronize_session=False)
     )
     if deleted:

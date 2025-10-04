@@ -1,7 +1,7 @@
 """Tests for tracked fencer CRUD operations."""
 
 import pytest
-from datetime import datetime
+from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app import crud, models
@@ -156,10 +156,10 @@ def test_update_fencer_check_status_success(db_session: Session, test_user: mode
     tracked = crud.create_tracked_fencer(db_session, test_user.id, "12345")
     # Simulate previous failures
     tracked.failure_count = 2
-    tracked.last_failure_at = datetime.utcnow()
+    tracked.last_failure_at = datetime.now(UTC)
     db_session.commit()
 
-    check_time = datetime.utcnow()
+    check_time = datetime.now(UTC)
     crud.update_fencer_check_status(db_session, tracked, check_time, success=True)
     db_session.commit()
 
@@ -174,7 +174,7 @@ def test_update_fencer_check_status_failure(db_session: Session, test_user: mode
     tracked = crud.create_tracked_fencer(db_session, test_user.id, "12345")
     db_session.commit()
 
-    check_time = datetime.utcnow()
+    check_time = datetime.now(UTC)
     crud.update_fencer_check_status(db_session, tracked, check_time, success=False)
     db_session.commit()
 

@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional
 
 import typer
@@ -208,7 +208,7 @@ def schedule_scraper(
             minutes=configured_interval,
             args=[url],
             id=job_id,
-            next_run_time=datetime.utcnow(),
+            next_run_time=datetime.now(UTC),
         )
         typer.echo(f"Scheduled job {job_id} for {url}")
 
@@ -218,7 +218,7 @@ def schedule_scraper(
         "interval",
         minutes=configured_interval,
         id="scrape_fencers",
-        next_run_time=datetime.utcnow(),
+        next_run_time=datetime.now(UTC),
     )
     typer.echo(f"Scheduled fencer scraping job (interval: {configured_interval} minutes)")
 

@@ -12,7 +12,7 @@ from app.database import get_db
 from app.models import TrackedClub, User
 from app.services.club_validation_service import validate_club_url
 
-from .dependencies import get_current_user, templates
+from .dependencies import get_current_user, templates, validate_csrf
 
 
 router = APIRouter()
@@ -98,6 +98,7 @@ async def add_tracked_club(
     request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     content_type = request.headers.get("content-type", "")
 
@@ -210,6 +211,7 @@ async def update_tracked_club(
     request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     tracked = crud.get_tracked_club_for_user(db, tracked_club_id, user.id)
     if not tracked:
@@ -243,6 +245,7 @@ def remove_tracked_club(
     tracked_club_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     tracked = crud.get_tracked_club_for_user(db, tracked_club_id, user.id)
     if not tracked:

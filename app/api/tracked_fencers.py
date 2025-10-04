@@ -1,6 +1,6 @@
 """Routes for managing tracked fencers."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -14,7 +14,7 @@ from app.models import TrackedFencer, User
 from app.services import fencer_validation_service, fencer_scraper_service
 from app.services.fencer_validation_service import build_fencer_profile_url
 
-from .dependencies import get_current_user, templates
+from .dependencies import get_current_user, templates, validate_csrf
 
 
 router = APIRouter()
@@ -43,8 +43,8 @@ def _determine_status(fencer: TrackedFencer) -> FencerStatus:
         cooldown_expires = fencer.last_failure_at + timedelta(
             minutes=fencer_scraper_service.FENCER_FAILURE_COOLDOWN_MIN
         )
-        if cooldown_expires > datetime.utcnow():
-            remaining = cooldown_expires - datetime.utcnow()
+        if cooldown_expires > datetime.now(UTC):
+            remaining = cooldown_expires - datetime.now(UTC)
             minutes = max(1, int(remaining.total_seconds() // 60))
             msg = (
                 f"Cooling down after repeated failures. Next retry in about {minutes} minute(s)."
@@ -149,6 +149,7 @@ async def create_tracked_fencer(
     request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     form = await request.form()
     fencer_id_input = (form.get("fencer_id") or "").strip()
@@ -257,6 +258,7 @@ async def edit_tracked_fencer(
     request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     fencer = crud.get_tracked_fencer_by_id(db, tracked_fencer_id)
     if not fencer or fencer.user_id != user.id:
@@ -298,6 +300,7 @@ async def delete_tracked_fencer(
     tracked_fencer_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     fencer = crud.get_tracked_fencer_by_id(db, tracked_fencer_id)
     if not fencer or fencer.user_id != user.id:
@@ -318,6 +321,7 @@ async def deactivate_tracked_fencer(
     tracked_fencer_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     fencer = crud.get_tracked_fencer_by_id(db, tracked_fencer_id)
     if not fencer or fencer.user_id != user.id:
@@ -337,6 +341,7 @@ async def reactivate_tracked_fencer(
     tracked_fencer_id: int,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _csrf: None = Depends(validate_csrf),
 ):
     fencer = crud.get_tracked_fencer_by_id(db, tracked_fencer_id)
     if not fencer or fencer.user_id != user.id:

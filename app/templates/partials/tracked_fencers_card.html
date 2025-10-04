@@ -19,6 +19,7 @@
     <article class="fencer-add">
         <h3>Add a fencer</h3>
         <form method="post" action="/fencers">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label>
                 Fencer profile URL
                 <input type="text" name="fencer_id" required placeholder="https://fencingtracker.com/p/100235805/Nicholas-Iarikov">
@@ -85,6 +86,7 @@
             <details>
                 <summary>Edit fencer</summary>
                 <form method="post" action="/fencers/{{ fencer.id }}/edit" class="fencer-edit-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <label>
                         Display name
                         <input type="text" name="display_name" value="{{ fencer.raw_display_name }}" placeholder="Defaults to scraped name">
@@ -98,9 +100,11 @@
                 </form>
                 <div style="display: flex; gap: 0.5rem;">
                     <form method="post" action="/fencers/{{ fencer.id }}/deactivate" class="inline deactivate-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="outline" onclick="return confirm('Deactivate this fencer?');">Deactivate</button>
                     </form>
                     <form method="post" action="/fencers/{{ fencer.id }}/delete" class="inline delete-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="outline secondary" onclick="return confirm('Permanently DELETE this fencer? This cannot be undone.');">Delete</button>
                     </form>
                 </div>
@@ -119,6 +123,7 @@
         <li>
             <span>{{ fencer.display_name }} (ID {{ fencer.fencer_id }})</span>
             <form method="post" action="/fencers/{{ fencer.id }}/reactivate">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="small">Reactivate</button>
             </form>
         </li>

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -67,7 +67,7 @@ def test_validate_session_expires_old_tokens(db_session):
     user = auth_service.register_user("frank", "frank@example.com", "password123", db_session)
     db_session.commit()
 
-    expired_time = datetime.utcnow() - timedelta(days=1)
+    expired_time = datetime.now(UTC) - timedelta(days=1)
     crud.create_session(db_session, user.id, "expired", expired_time)
     db_session.commit()
 

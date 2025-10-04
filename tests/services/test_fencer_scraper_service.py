@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -191,7 +191,7 @@ def test_scrape_all_tracked_fencers_respects_failure_cooldown(monkeypatch, mock_
         display_name="Cooldown Fencer",
         last_registration_hash=None,
         failure_count=scraper_service.FENCER_MAX_FAILURES,
-        last_failure_at=datetime.utcnow(),
+        last_failure_at=datetime.now(UTC),
     )
 
     monkeypatch.setattr(scraper_service, "get_all_active_tracked_fencers", lambda db: [tracked])
@@ -212,13 +212,13 @@ def test_scrape_all_tracked_fencers_respects_failure_cooldown(monkeypatch, mock_
 from datetime import timedelta
 
 def test_scrape_all_tracked_fencers_resumes_after_cooldown(monkeypatch, mock_db):
-    future_time = datetime.utcnow() + timedelta(minutes=scraper_service.FENCER_FAILURE_COOLDOWN_MIN + 1)
+    future_time = datetime.now(UTC) + timedelta(minutes=scraper_service.FENCER_FAILURE_COOLDOWN_MIN + 1)
     tracked = SimpleNamespace(
         fencer_id="55555",
         display_name="Cooldown Fencer",
         last_registration_hash=None,
         failure_count=scraper_service.FENCER_MAX_FAILURES,
-        last_failure_at=datetime.utcnow(),
+        last_failure_at=datetime.now(UTC),
     )
 
     monkeypatch.setattr(scraper_service, "get_all_active_tracked_fencers", lambda db: [tracked])
